@@ -1,0 +1,20 @@
+{
+  "name": "streamflix",
+  "version": "2.1.0",
+  "description": "Netflix-style IPTV player with live streaming capabilities",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "dev": "python3 -m http.server 8000"
+  },
+  "keywords": [
+    "iptv",
+    "streaming",
+    "netflix",
+    "player",
+    "m3u",
+    "live-tv"
+  ],
+  "author": "Chris",
+  "license": "MIT"
+}
