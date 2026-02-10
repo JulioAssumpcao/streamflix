@@ -5,6 +5,7 @@ class NetflixIPTVPlayer {
         this.currentChannelIndex = -1;
         this.isPlaying = false;
         this.isMuted = false;
+        this.currentHls = null; // Current HLS.js instance
         this.playlists = {
             india: 'https://iptv-org.github.io/iptv/countries/in.m3u',
             global: 'https://iptv-org.github.io/iptv/index.m3u'
@@ -46,10 +47,13 @@ class NetflixIPTVPlayer {
         this.sidebarChannelName = document.getElementById('sidebar-channel-name');
         this.sidebarChannelInfo = document.getElementById('sidebar-channel-info');
 
-        // Set initial volume (not muted by default)
-        this.videoPlayer.volume = this.volumeSlider.value / 100;
-        this.lastVolume = this.videoPlayer.volume;
+        // Set initial volume
+        this.videoPlayer.volume = 0.8;
+        this.volumeSlider.value = 80;
+        this.lastVolume = 0.8;
         this.isMuted = false;
+        
+        console.log('Player initialized');
     }
 
     bindEvents() {
@@ -306,68 +310,86 @@ class NetflixIPTVPlayer {
     }
 
     loadChannel(url) {
-        console.log('Loading channel URL:', url);
+        console.log('Loading channel:', url);
         this.showLoading(true);
         
-        // Stop current playback and clean up
-        this.videoPlayer.pause();
-        this.videoPlayer.removeAttribute('src');
-        this.videoPlayer.load(); // Reset player state
+        const video = this.videoPlayer;
         
-        // Set new source with error handling
-        this.videoPlayer.src = url;
-        
-        // Wait for metadata to load
-        this.videoPlayer.addEventListener('loadedmetadata', () => {
-            console.log('Metadata loaded, attempting play');
-            this.attemptPlay();
-        }, { once: true });
-        
-        // Handle loading errors
-        this.videoPlayer.addEventListener('error', (e) => {
-            console.error('Video loading error:', e);
-            this.handleVideoError();
-        }, { once: true });
-        
-        // Start loading process
-        this.videoPlayer.load();
-    }
-
-    attemptPlay() {
-        // Try to play the video
-        const playPromise = this.videoPlayer.play();
-        
-        if (playPromise !== undefined) {
-            playPromise
-                .then(() => {
-                    console.log('Video playing successfully');
-                    this.showLoading(false);
-                })
-                .catch(error => {
-                    console.log('Playback requires user interaction:', error);
-                    this.showPlayPrompt();
-                    this.showLoading(false);
-                });
+        // Destroy previous HLS instance if exists
+        if (this.currentHls) {
+            this.currentHls.destroy();
+            this.currentHls = null;
         }
-    }
-
-    handleVideoError() {
-        console.error('Video failed to load');
-        this.showLoading(false);
-        this.showError('Failed to load channel. Trying next channel...');
         
-        // Try next channel after delay
-        setTimeout(() => {
-            if (this.channels.length > 1) {
-                this.nextChannel();
-            }
-        }, 3000);
-    }
-
-    showPlayPrompt() {
-        const playBtn = this.playPauseBtn.querySelector('i');
-        playBtn.className = 'fas fa-play-circle';
-        this.playPauseBtn.title = 'Click to start playback';
+        // Check if HLS.js is supported and URL is m3u8
+        if (Hls.isSupported()) {
+            console.log('Using HLS.js');
+            const hls = new Hls({
+                enableWorker: true,
+                lowLatencyMode: false,
+                backBufferLength: 90
+            });
+            
+            hls.loadSource(url);
+            hls.attachMedia(video);
+            
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                console.log('HLS Manifest parsed, playing...');
+                video.play()
+                    .then(() => {
+                        console.log('Playing successfully');
+                        this.showLoading(false);
+                    })
+                    .catch(error => {
+                        console.log('Autoplay blocked:', error);
+                        this.showLoading(false);
+                    });
+            });
+            
+            hls.on(Hls.Events.ERROR, (event, data) => {
+                if (data.fatal) {
+                    console.error('Fatal HLS error:', data);
+                    switch (data.type) {
+                        case Hls.ErrorTypes.NETWORK_ERROR:
+                            console.log('Network error, retrying...');
+                            hls.startLoad();
+                            break;
+                        case Hls.ErrorTypes.MEDIA_ERROR:
+                            console.log('Media error, recovering...');
+                            hls.recoverMediaError();
+                            break;
+                        default:
+                            this.showLoading(false);
+                            this.showError('Stream failed to load');
+                            setTimeout(() => this.nextChannel(), 2000);
+                            break;
+                    }
+                }
+            });
+            
+            this.currentHls = hls;
+            
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            // Safari native HLS support
+            console.log('Using native HLS support');
+            video.src = url;
+            video.addEventListener('loadedmetadata', () => {
+                video.play()
+                    .then(() => {
+                        console.log('Playing with native HLS');
+                        this.showLoading(false);
+                    })
+                    .catch(error => {
+                        console.log('Autoplay blocked:', error);
+                        this.showLoading(false);
+                    });
+            }, { once: true });
+            
+        } else {
+            console.error('HLS not supported');
+            this.showLoading(false);
+            this.showError('HLS streams not supported in this browser');
+        }
     }
 
     togglePlayPause() {
@@ -395,7 +417,6 @@ class NetflixIPTVPlayer {
         this.videoPlayer.volume = volume;
         this.lastVolume = volume;
         
-        // Update mute state
         if (volume > 0) {
             this.isMuted = false;
             this.muteToggleBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
@@ -407,11 +428,12 @@ class NetflixIPTVPlayer {
 
     toggleMute() {
         if (this.isMuted) {
-            this.videoPlayer.volume = this.lastVolume;
-            this.volumeSlider.value = this.lastVolume * 100;
+            this.videoPlayer.volume = this.lastVolume > 0 ? this.lastVolume : 0.8;
+            this.volumeSlider.value = this.videoPlayer.volume * 100;
             this.muteToggleBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
             this.isMuted = false;
         } else {
+            this.lastVolume = this.videoPlayer.volume;
             this.videoPlayer.volume = 0;
             this.volumeSlider.value = 0;
             this.muteToggleBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
