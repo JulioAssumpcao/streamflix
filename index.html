@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamFlix - Premium IPTV Experience</title>
+    <link rel="stylesheet" href="css/netflix-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h1><i class="fas fa-play-circle"></i> StreamFlix</h1>
+            </div>
+            <div class="nav-controls">
+                <div class="playlist-selector">
+                    <select id="playlist-select">
+                        <option value="india">🇮🇳 India Channels</option>
+                        <option value="global">🌍 Global Channels</option>
+                    </select>
+                </div>
+                <button id="toggle-sidebar" class="btn-nav">
+                    <i class="fas fa-th-large"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-container">
+        <!-- Hero Section with Video Player -->
+        <section class="hero-section">
+            <div class="video-wrapper">
+                <video id="video-player" autoplay muted playsinline>
+                    Your browser does not support the video tag.
+                </video>
+                
+                <!-- Channel Info Overlay -->
+                <div class="channel-overlay" id="channel-info">
+                    <div class="channel-meta">
+                        <h2 id="current-channel-name">Welcome to StreamFlix</h2>
+                        <p id="current-channel-group">Select a channel to begin streaming</p>
+                        <div class="channel-stats">
+                            <span id="channel-resolution">HD</span>
+                            <span class="separator">•</span>
+                            <span id="channel-category">Premium</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading Overlay -->
+                <div class="loading-overlay" id="loading">
+                    <div class="loading-content">
+                        <div class="spinner-netflix"></div>
+                        <p>Loading premium content...</p>
+                    </div>
+                </div>
+
+                <!-- Player Controls Overlay -->
+                <div class="player-controls-overlay">
+                    <div class="control-buttons">
+                        <button id="prev-channel" class="control-btn">
+                            <i class="fas fa-step-backward"></i>
+                            <span>Prev</span>
+                        </button>
+                        <button id="play-pause" class="control-btn main-play">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button id="next-channel" class="control-btn">
+                            <i class="fas fa-step-forward"></i>
+                            <span>Next</span>
+                        </button>
+                    </div>
+                    
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="volume-controls">
+                        <button id="mute-toggle" class="volume-btn">
+                            <i class="fas fa-volume-up"></i>
+                        </button>
+                        <input type="range" id="volume-slider" min="0" max="100" value="80" class="volume-slider">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Channel Categories Section -->
+        <section class="categories-section">
+            <div class="categories-container">
+                <div class="category-header">
+                    <h2>Browse Channels</h2>
+                    <div class="search-container">
+                        <input type="text" id="search-input" placeholder="Search channels...">
+                        <i class="fas fa-search"></i>
+                    </div>
+                </div>
+                
+                <div class="category-filters">
+                    <select id="category-filter">
+                        <option value="all">All Categories</option>
+                    </select>
+                </div>
+
+                <!-- Channels Grid -->
+                <div class="channels-grid" id="channel-list">
+                    <div class="loading-placeholder">
+                        <div class="placeholder-card"></div>
+                        <div class="placeholder-card"></div>
+                        <div class="placeholder-card"></div>
+                        <div class="placeholder-card"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h3>Live Channels</h3>
+                <button id="close-sidebar" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="sidebar-content">
+                <div class="now-playing">
+                    <h4>Now Playing</h4>
+                    <div class="current-channel-card">
+                        <img id="sidebar-channel-logo" src="" alt="" style="display: none;">
+                        <div class="channel-details">
+                            <h5 id="sidebar-channel-name">No channel selected</h5>
+                            <p id="sidebar-channel-info">Select a channel to start</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="quick-actions">
+                    <h4>Quick Actions</h4>
+                    <div class="action-buttons">
+                        <button class="action-btn">
+                            <i class="fas fa-heart"></i>
+                            <span>Favorites</span>
+                        </button>
+                        <button class="action-btn">
+                            <i class="fas fa-history"></i>
+                            <span>Recently Watched</span>
+                        </button>
+                        <button class="action-btn">
+                            <i class="fas fa-cog"></i>
+                            <span>Settings</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Footer/Credits -->
+    <footer class="main-footer">
+        <div class="footer-content">
+            <div class="brand-info">
+                <h3>StreamFlix</h3>
+                <p>Premium IPTV Streaming Platform</p>
+            </div>
+            <div class="developer-credits">
+                <p>Made with <i class="fas fa-heart"></i> for seamless streaming</p>
+                <p>© 2024 StreamFlix. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/netflix-player.js"></script>
+</body>
+</html>
