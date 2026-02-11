@@ -13,8 +13,19 @@ class NetflixIPTVPlayer {
         
         this.initializeElements();
         this.bindEvents();
+        this.initializeSplashScreen();
         this.loadPlaylist('india');
         this.setupUIEffects();
+    }
+
+    initializeSplashScreen() {
+        // Hide splash screen after animation completes
+        setTimeout(() => {
+            const splash = document.getElementById('splash-screen');
+            if (splash) {
+                splash.style.display = 'none';
+            }
+        }, 3000); // 2.5s animation + 0.5s buffer
     }
 
     initializeElements() {
