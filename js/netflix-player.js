@@ -31,6 +31,7 @@ class NetflixIPTVPlayer {
     initializeElements() {
         // Video elements
         this.videoPlayer = document.getElementById('video-player');
+        this.videoWrapper = document.querySelector('.video-wrapper');
         this.channelInfo = document.getElementById('channel-info');
         this.currentChannelName = document.getElementById('current-channel-name');
         this.currentChannelGroup = document.getElementById('current-channel-group');
@@ -47,6 +48,9 @@ class NetflixIPTVPlayer {
         this.muteToggleBtn = document.getElementById('mute-toggle');
         this.toggleSidebarBtn = document.getElementById('toggle-sidebar');
         this.closeSidebarBtn = document.getElementById('close-sidebar');
+        this.fullscreenBtn = document.getElementById('fullscreen-toggle');
+        this.pipBtn = document.getElementById('pip-toggle');
+        this.theaterBtn = document.getElementById('theater-mode');
 
         // Sidebar elements
         this.sidebar = document.getElementById('sidebar');
@@ -63,6 +67,7 @@ class NetflixIPTVPlayer {
         this.volumeSlider.value = 80;
         this.lastVolume = 0.8;
         this.isMuted = false;
+        this.isTheaterMode = false;
         
         console.log('Player initialized');
     }
@@ -82,6 +87,9 @@ class NetflixIPTVPlayer {
         this.nextChannelBtn.addEventListener('click', () => this.nextChannel());
         this.volumeSlider.addEventListener('input', (e) => this.setVolume(e.target.value));
         this.muteToggleBtn.addEventListener('click', () => this.toggleMute());
+        this.fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
+        this.pipBtn.addEventListener('click', () => this.togglePiP());
+        this.theaterBtn.addEventListener('click', () => this.toggleTheaterMode());
 
         // Sidebar events
         this.toggleSidebarBtn.addEventListener('click', () => this.toggleSidebar());
@@ -93,6 +101,11 @@ class NetflixIPTVPlayer {
         // Window events
         window.addEventListener('scroll', () => this.handleScroll());
         document.addEventListener('keydown', (e) => this.handleKeyboard(e));
+
+        // Fullscreen change events
+        document.addEventListener('fullscreenchange', () => this.onFullscreenChange());
+        document.addEventListener('webkitfullscreenchange', () => this.onFullscreenChange());
+        document.addEventListener('mozfullscreenchange', () => this.onFullscreenChange());
 
         // Navbar scroll effect
         window.addEventListener('scroll', () => {
