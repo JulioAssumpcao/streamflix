@@ -715,27 +715,129 @@ body.theater-mode .navbar {
 
 /* Mobile control adjustments */
 @media (max-width: 768px) {
+    .player-controls-overlay {
+        padding: 0.8rem;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .control-buttons {
+        order: 2;
+        width: 100%;
+        justify-content: center;
+        gap: 1rem;
+    }
+    
+    .control-btn {
+        width: 50px;
+        height: 50px;
+        font-size: 1.1rem;
+    }
+    
+    .control-btn.main-play {
+        width: 65px;
+        height: 65px;
+        font-size: 1.8rem;
+    }
+    
+    .progress-container {
+        order: 1;
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+    }
+    
     .control-buttons-right {
+        order: 3;
+        width: 100%;
+        justify-content: space-between;
         gap: 0.5rem;
     }
     
     .control-btn-icon {
-        min-width: 36px;
-        height: 36px;
-        font-size: 0.9rem;
+        min-width: 44px;
+        height: 44px;
+        font-size: 1rem;
+        flex: 1;
+        max-width: 60px;
     }
     
     .volume-controls {
-        padding: 0.3rem 0.6rem;
+        padding: 0.5rem 0.8rem;
+        flex: 1;
+        max-width: 150px;
     }
     
     .volume-slider {
-        width: 60px;
+        width: 70px;
     }
     
-    .progress-container {
-        margin: 0.5rem 0;
-        max-width: 100%;
+    .volume-btn {
+        font-size: 1.1rem;
+    }
+    
+    /* Hide theater mode on mobile (not useful on small screens) */
+    #theater-mode {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .player-controls-overlay {
+        padding: 0.5rem;
+    }
+    
+    .control-buttons {
+        gap: 0.5rem;
+    }
+    
+    .control-btn {
+        width: 45px;
+        height: 45px;
+        font-size: 1rem;
+    }
+    
+    .control-btn.main-play {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+    }
+    
+    .control-btn-icon {
+        min-width: 40px;
+        height: 40px;
+        font-size: 0.9rem;
+    }
+    
+    .volume-slider {
+        width: 50px;
+    }
+    
+    /* On very small screens, hide PiP button */
+    #pip-toggle {
+        display: none;
+    }
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+    .control-btn,
+    .control-btn-icon,
+    .volume-btn {
+        /* Larger touch targets for mobile */
+        min-width: 44px;
+        min-height: 44px;
+    }
+    
+    .player-controls-overlay {
+        /* Always show controls on touch devices */
+        opacity: 1 !important;
+    }
+    
+    .channel-overlay {
+        /* Show channel info on touch devices */
+        opacity: 0.9;
+        transform: translateY(0);
     }
 }
 

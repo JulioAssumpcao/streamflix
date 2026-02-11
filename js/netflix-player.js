@@ -14,6 +14,7 @@ class NetflixIPTVPlayer {
         this.initializeElements();
         this.bindEvents();
         this.initializeSplashScreen();
+        this.initializeMobileFeatures();
         this.loadPlaylist('india');
         this.setupUIEffects();
     }
