@@ -656,14 +656,7 @@ class NetflixIPTVPlayer {
             }
         }, 5000);
     }
-}
 
-// Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('🎬 StreamFlix Player Initializing...');
-    window.netflixPlayer = new NetflixIPTVPlayer();
-    console.log('✅ StreamFlix Player Ready!');
-});
     // Detect if user is on mobile device
     isMobileDevice() {
         return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
@@ -700,3 +693,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
+}
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🎬 StreamFlix Player Initializing...');
+    window.netflixPlayer = new NetflixIPTVPlayer();
+    console.log('✅ StreamFlix Player Ready!');
+});
