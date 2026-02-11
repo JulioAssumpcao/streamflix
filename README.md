@@ -2,9 +2,11 @@
 
 ![StreamFlix Banner](https://placehold.co/800x200/141414/FFFFFF?text=StreamFlix+IPTV+Player)
 
+🌐 **Live Demo**: [https://streamflix-watch.pages.dev/](https://streamflix-watch.pages.dev/)
+
 A modern, Netflix-inspired web-based IPTV player that streams live TV channels from M3U playlists with a premium user experience. Built with vanilla JavaScript and HLS.js for seamless HLS streaming support.
 
-## ✨ Latest Updates (v2.0)
+## ✨ Latest Updates (v2.1)
 
 ### 🎉 Major Fixes & Improvements
 
@@ -17,18 +19,38 @@ A modern, Netflix-inspired web-based IPTV player that streams live TV channels f
 
 #### **UI/UX Redesign** 🎨
 - **Netflix-Style Layout**: Video player fixed at top, content scrolls below (authentic Netflix experience)
+- **Netflix Splash Screen**: Animated logo with glowing effects on app load (2.5s)
 - **Fixed Overlay Issues**: Channel cards and search bar no longer overlay video player
 - **Proper Z-Index Management**: Clean layering system prevents UI conflicts
 - **Enhanced Controls**: Smooth opacity transitions for player controls
 - **Responsive Hero Section**: Adaptive video player sizing (50vh mobile, 100vh desktop)
 - **Mobile Optimizations**: Persistent controls and touch-friendly interface
 
-#### **Player Improvements** 🎮
+#### **Advanced Player Controls** 🎮
+- **Fullscreen Mode** (F key): True fullscreen with exit controls
+- **Theater Mode** (T key): Full viewport height with scrollable content
+- **Picture-in-Picture** (P key): Float video while browsing other tabs
 - **Simplified Playback Logic**: Streamlined HLS instance management
 - **Better Volume Controls**: Clean mute/unmute functionality
 - **Loading States**: Professional loading indicators with error messages
 - **Progress Bar**: Real-time playback progress tracking
-- **Keyboard Shortcuts**: Enhanced keyboard navigation support
+- **Enhanced Keyboard Shortcuts**: F/T/P keys for view modes
+
+#### **Mobile Excellence** 📱
+- **Touch-Optimized Controls**: 44x44px minimum tap targets (Apple HIG compliant)
+- **3-Row Stacked Layout**: Progress, playback, and settings rows on mobile
+- **Always-Visible Controls**: No hover needed on touch devices
+- **Tap-to-Play**: Direct video tapping for play/pause
+- **Adaptive Button Sizing**: Larger play button (65px) on mobile
+- **Smart Feature Hiding**: Theater mode hidden on small screens
+- **Device Detection**: Automatic mobile initialization
+- **Comprehensive Documentation**: See MOBILE_GUIDE.md
+
+#### **Developer Improvements** 🛠️
+- **Fixed Syntax Error**: Resolved class method positioning bug
+- **Debug Logging**: Comprehensive console logs for troubleshooting
+- **Code Validation**: Node.js syntax checking integration
+- **Test Tools**: Created test-channels.html for isolated debugging
 
 ## 🎬 Features
 
@@ -42,12 +64,15 @@ A modern, Netflix-inspired web-based IPTV player that streams live TV channels f
 
 ### 🎨 Premium UI/UX
 - **Netflix-Style Interface**: Authentic dark theme with red accents
+- **Animated Splash Screen**: StreamFlix logo with glowing effects on load
 - **Hero Video Section**: Full-screen video player at top
 - **Scrollable Content**: Channel grid below video (no overlays!)
 - **Smooth Animations**: Polished transitions and hover effects
 - **Channel Cards**: Beautiful grid layout with channel logos and metadata
 - **Overlay Controls**: Elegant player controls that appear on hover
 - **Loading States**: Professional loading spinners and error messages
+- **Theater Mode**: Cinematic full-viewport viewing experience
+- **Picture-in-Picture**: Multitask while watching
 
 ### 🎮 Controls & Navigation
 - **Keyboard Shortcuts**: 
@@ -56,34 +81,41 @@ A modern, Netflix-inspired web-based IPTV player that streams live TV channels f
   - `↑ ↓`: Volume Control
   - `M`: Toggle Mute
   - `F`: Toggle Fullscreen
-- **Touch Support**: Mobile-friendly touch controls
+  - `T`: Toggle Theater Mode
+  - `P`: Toggle Picture-in-Picture
+- **Touch Support**: Mobile-friendly touch controls with tap-to-play
 - **Volume Control**: Precise volume slider (0-100%) with mute toggle
 - **Fullscreen Mode**: One-click fullscreen viewing
+- **Theater Mode**: Full viewport height for immersive viewing
+- **Picture-in-Picture**: Float video over other windows/tabs
 - **Channel History**: Easy navigation between channels
 - **Previous/Next**: Quick channel switching with dedicated buttons
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Python 3.x (for local server)
+### 🌐 Live Access
+**Just visit**: [https://streamflix-watch.pages.dev/](https://streamflix-watch.pages.dev/)
+
+No installation needed! Works instantly on any device.
+
+### 💻 Local Development
+
+**Prerequisites:**
 - Modern web browser (Chrome 70+, Firefox 65+, Safari 12+, Edge 79+)
+- Python 3.x (for local server)
 
-### Installation
-
-1. **Clone the repository:**
+**Setup:**
 ```bash
+# Clone repository
 git clone https://github.com/chriz-3656/streamflix.git
 cd streamflix
-```
 
-2. **Start the player:**
-```bash
 # Start local server
 python3 -m http.server 8000
-```
 
-3. **Open in browser:**
-Navigate to `http://localhost:8000`
+# Open browser
+# Visit: http://localhost:8000
+```
 
 ## 🎯 Usage
 
@@ -101,28 +133,36 @@ Navigate to `http://localhost:8000`
 - **↑ ↓**: Increase/Decrease Volume
 - **M**: Toggle Mute
 - **F**: Toggle Fullscreen mode
+- **T**: Toggle Theater Mode (full viewport height)
+- **P**: Toggle Picture-in-Picture (multitasking)
 
 ### Mobile Usage
-- Tap channel cards to play
-- Controls are always visible on mobile
-- Touch-friendly button sizes
-- Responsive layout adapts to screen size
-- Swipe gestures supported
+- **Tap channel cards** to start playing
+- **Tap video** to play/pause
+- **Controls always visible** - no hover needed
+- **44x44px touch targets** - Apple HIG compliant
+- **3-row stacked layout** - progress, playback, settings
+- **Larger play button** (65px) for easy access
+- **Responsive grid** adapts to screen size
+- See **MOBILE_GUIDE.md** for complete mobile documentation
 
 ## 📁 Project Structure
 
 ```
 streamflix/
-├── index.html              # Main player interface (with HLS.js)
+├── index.html                # Main player interface (with HLS.js & splash)
+├── splash-preview.html       # Isolated splash screen preview
+├── test-channels.html        # Debugging tool for playlist testing
 ├── css/
-│   └── netflix-style.css   # Netflix-inspired styling (fixed layout)
+│   └── netflix-style.css     # Netflix-inspired styling + splash animations
 ├── js/
-│   └── netflix-player.js   # Core player with HLS.js integration
-├── assets/                 # Images and media files
-├── 404.html               # Error page
-├── _routes.json           # Cloudflare routing config
-├── package.json           # Project metadata
-└── README.md             # This file
+│   └── netflix-player.js     # Core player (703 lines, HLS.js integration)
+├── assets/                   # Images and media files
+├── MOBILE_GUIDE.md          # Comprehensive mobile usage guide
+├── 404.html                 # Error page
+├── _routes.json             # Cloudflare routing config
+├── package.json             # Project metadata
+└── README.md                # This file
 ```
 
 ## 🛠️ Technical Details
@@ -196,16 +236,21 @@ const hls = new Hls({
 ## 📱 Mobile Features
 
 ### Touch Optimizations
-- Larger tap targets (min 48x48px)
-- Persistent controls (always visible)
+- Larger tap targets (min 44x44px - Apple HIG compliant)
+- Persistent controls (always visible on touch devices)
+- Tap-to-play on video element
+- 3-row stacked control layout (progress/playback/settings)
+- Enlarged play button (65x65px vs 60x60px desktop)
 - Swipe-friendly card layout
 - Adaptive grid layouts (2-6 columns)
+- Theater mode hidden on mobile (not useful on small screens)
+- PiP button conditionally hidden on <480px screens
 
 ### Responsive Breakpoints
-- **Desktop**: 1200px+ (6 columns)
-- **Tablet**: 768-1199px (4 columns)
-- **Mobile**: <768px (2-3 columns)
-- **Small Mobile**: <480px (2 columns)
+- **Desktop**: 1200px+ (6 columns grid)
+- **Tablet**: 768-1199px (4 columns grid)
+- **Mobile**: <768px (2-3 columns, stacked controls)
+- **Small Mobile**: <480px (2 columns, minimal buttons)
 
 ### Performance
 - Reduced animations on mobile
@@ -245,40 +290,73 @@ const hls = new Hls({
    - Close other streaming applications
    - Try different network connection
    - Controls are persistent on mobile
+   - Refer to MOBILE_GUIDE.md for troubleshooting
+
+#### 6. **Channels Not Loading / Syntax Errors**
+   ✅ **Fixed in v2.1!** JavaScript syntax error resolved
+   - Hard refresh browser: Ctrl+Shift+R (Win) or Cmd+Shift+R (Mac)
+   - Clear browser cache if issue persists
+   - Check Console for "Player initialized" message
+   - Use test-channels.html for isolated debugging
 
 ### Browser Console Debugging
 Open Developer Tools (F12) and check console for:
+- ✅ "🎬 StreamFlix Player Initializing..."
 - ✅ "Player initialized"
-- ✅ "Using HLS.js"
+- ✅ "📡 Loading india playlist..."
+- ✅ "✅ Parsed XXX valid channels"
+- ✅ "🎨 Rendering XXX channels to grid"
+- ✅ "Using HLS.js" (when playing channel)
 - ✅ "HLS Manifest parsed, playing..."
-- ✅ "Playing successfully"
 
 ## 🚀 Deployment
 
-### Cloudflare Pages
+### 🌐 Live Production
+**Current Deployment**: [https://streamflix-watch.pages.dev/](https://streamflix-watch.pages.dev/)
+- Hosted on **Cloudflare Pages**
+- Auto-deploys on push to `main` branch
+- Global CDN with edge caching
+- Zero-configuration static hosting
+
+### Cloudflare Pages (Recommended)
 This project is optimized for Cloudflare Pages:
 
 1. Connect your GitHub repository to Cloudflare Pages
 2. Build settings: **None** (static site, no build step)
 3. Output directory: `/` (root)
 4. Auto-deploys on push to `main` branch
+5. Custom domain supported
 
 ### GitHub Pages
 ```bash
 # Enable GitHub Pages in repository settings
 # Set source to main branch, / (root)
+# Access at: https://username.github.io/streamflix
 ```
 
 ### Manual Deployment
 Upload these files to any static hosting:
-- `index.html`
-- `css/`
-- `js/`
-- `assets/`
+- `index.html`, `splash-preview.html`, `test-channels.html`
+- `css/` directory
+- `js/` directory
+- `assets/` directory (if any)
 - `404.html`
-- `_routes.json`
+- `_routes.json` (for Cloudflare routing)
 
 ## 📊 Changelog
+
+### Version 2.1 (February 2026) - Current
+- ✅ **Fixed JavaScript Syntax Error** - Channels now load properly
+- ✅ **Added Netflix Splash Screen** - Animated logo on app load (2.5s)
+- ✅ **Advanced Player Controls** - Fullscreen, Theater Mode, Picture-in-Picture
+- ✅ **Mobile Excellence** - 3-row stacked layout, 44px touch targets
+- ✅ **Tap-to-Play** - Direct video tapping on mobile
+- ✅ **Keyboard Shortcuts** - F/T/P keys for view modes
+- ✅ **Debug Logging** - Comprehensive console logs with emojis
+- ✅ **Mobile Guide** - Created MOBILE_GUIDE.md documentation
+- ✅ **Test Tools** - Added test-channels.html for debugging
+- ✅ **Live Deployment** - Published to Cloudflare Pages
+- 🔧 **Code Cleanup** - Fixed class method positioning bug
 
 ### Version 2.0 (February 2026)
 - ✅ Added HLS.js library for proper HLS streaming
@@ -303,13 +381,17 @@ Upload these files to any static hosting:
 Contributions are welcome! Areas for improvement:
 
 - [ ] Playlist management (add/remove custom playlists)
-- [ ] Favorites system (save favorite channels)
-- [ ] Watch history tracking
-- [ ] Quality selection (auto/720p/1080p)
-- [ ] Picture-in-Picture mode
-- [ ] Chromecast support
+- [ ] Favorites system (save favorite channels to localStorage)
+- [ ] Watch history tracking with resume playback
+- [ ] Quality selection (auto/720p/1080p for adaptive streams)
+- [ ] Chromecast support for TV casting
 - [ ] EPG (Electronic Program Guide) integration
-- [ ] Subtitle support
+- [ ] Subtitle/closed caption support
+- [ ] PWA manifest for "Add to Home Screen"
+- [x] ✅ Picture-in-Picture mode (completed v2.1)
+- [x] ✅ Fullscreen mode (completed v2.1)
+- [x] ✅ Theater mode (completed v2.1)
+- [x] ✅ Mobile optimization (completed v2.1)
 
 ## ⚠️ Disclaimer
 
@@ -333,9 +415,19 @@ MIT License - Feel free to modify and distribute.
 ## 📞 Support
 
 Found a bug or have a feature request?
-- Open an issue on GitHub
-- Check existing issues first
-- Provide browser console logs for bugs
+- 🐛 **Open an issue** on [GitHub Issues](https://github.com/chriz-3656/streamflix/issues)
+- 📖 **Check existing issues** before creating new ones
+- 🔍 **Provide browser console logs** (F12) for bug reports
+- 📱 **Mobile issues**: See MOBILE_GUIDE.md troubleshooting first
+- 🧪 **Use test-channels.html** for debugging playlist loading
+
+## 🔗 Links
+
+- 🌐 **Live Demo**: [https://streamflix-watch.pages.dev/](https://streamflix-watch.pages.dev/)
+- 💻 **GitHub Repository**: [https://github.com/chriz-3656/streamflix](https://github.com/chriz-3656/streamflix)
+- 📱 **Mobile Guide**: [MOBILE_GUIDE.md](MOBILE_GUIDE.md)
+- 🔬 **Test Tool**: [test-channels.html](test-channels.html)
+- 🎬 **Splash Preview**: [splash-preview.html](splash-preview.html)
 
 ---
 
@@ -344,5 +436,5 @@ Found a bug or have a feature request?
 [![GitHub](https://img.shields.io/github/license/chriz-3656/streamflix)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/chriz-3656/streamflix)](https://github.com/chriz-3656/streamflix/stargazers)
 [![HLS.js](https://img.shields.io/badge/HLS.js-v1.5+-blue)](https://github.com/video-dev/hls.js)
-
-**Repository**: https://github.com/chriz-3656/streamflix
+[![Live Demo](https://img.shields.io/badge/Live-Demo-success)](https://streamflix-watch.pages.dev/)
+[![Cloudflare Pages](https://img.shields.io/badge/Deployed%20on-Cloudflare%20Pages-orange)](https://pages.cloudflare.com/)
