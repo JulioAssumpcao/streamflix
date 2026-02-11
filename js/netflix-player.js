@@ -136,20 +136,39 @@ class NetflixIPTVPlayer {
 
     async loadPlaylist(type) {
         try {
+            console.log(`📡 Loading ${type} playlist...`);
             this.showLoading(true);
-            const response = await fetch(this.playlists[type]);
+            
+            const url = this.playlists[type];
+            console.log(`🔗 Fetching from: ${url}`);
+            
+            const response = await fetch(url);
+            console.log(`✅ Response status: ${response.status}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
             const playlistText = await response.text();
+            console.log(`📄 Received ${playlistText.length} bytes`);
+            
             this.parsePlaylist(playlistText);
+            console.log(`🎯 Parsed ${this.channels.length} channels`);
+            
             this.renderChannelGrid();
             this.populateCategories();
             this.showLoading(false);
+            
+            console.log(`✅ Playlist loaded successfully!`);
         } catch (error) {
-            console.error('Error loading playlist:', error);
-            this.showError('Failed to load playlist. Please try again.');
+            console.error('❌ Error loading playlist:', error);
+            this.showLoading(false);
+            this.showError(`Failed to load playlist: ${error.message}`);
         }
     }
 
     parsePlaylist(playlistText) {
+        console.log('🔍 Parsing M3U playlist...');
         const lines = playlistText.split('\n');
         this.channels = [];
         let currentChannel = null;
@@ -175,7 +194,12 @@ class NetflixIPTVPlayer {
         }
         
         this.filteredChannels = [...this.channels];
-        console.log(`Loaded ${this.channels.length} channels`);
+        console.log(`✅ Parsed ${this.channels.length} valid channels`);
+        
+        if (this.channels.length === 0) {
+            console.warn('⚠️ No channels found in playlist!');
+            this.showError('No channels found in playlist');
+        }
     }
 
     isValidStreamUrl(url) {
@@ -217,6 +241,7 @@ class NetflixIPTVPlayer {
     }
 
     renderChannelGrid(channels = this.filteredChannels) {
+        console.log(`🎨 Rendering ${channels.length} channels to grid`);
         this.channelList.innerHTML = '';
 
         if (channels.length === 0) {
@@ -227,6 +252,7 @@ class NetflixIPTVPlayer {
                     <p>Try adjusting your search or filter criteria</p>
                 </div>
             `;
+            console.warn('⚠️ No channels to render');
             return;
         }
 
@@ -234,6 +260,8 @@ class NetflixIPTVPlayer {
             const channelElement = this.createChannelCard(channel, index);
             this.channelList.appendChild(channelElement);
         });
+        
+        console.log(`✅ Successfully rendered ${channels.length} channel cards`);
     }
 
     createChannelCard(channel, displayIndex) {
@@ -636,3 +664,39 @@ document.addEventListener('DOMContentLoaded', () => {
     window.netflixPlayer = new NetflixIPTVPlayer();
     console.log('✅ StreamFlix Player Ready!');
 });
+    // Detect if user is on mobile device
+    isMobileDevice() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+               (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
+    }
+
+    // Initialize mobile-specific features
+    initializeMobileFeatures() {
+        if (this.isMobileDevice()) {
+            console.log('Mobile device detected - optimizing controls');
+            
+            // Always show controls on mobile
+            if (this.videoWrapper) {
+                this.videoWrapper.classList.add('show-controls');
+            }
+            
+            // Add touch event for video tap to play/pause
+            this.videoPlayer.addEventListener('click', (e) => {
+                if (e.target === this.videoPlayer) {
+                    this.togglePlayPause();
+                }
+            });
+            
+            // Prevent double-tap zoom on controls
+            const controls = document.querySelector('.player-controls-overlay');
+            if (controls) {
+                controls.addEventListener('touchend', (e) => {
+                    const target = e.target.closest('button, input');
+                    if (target) {
+                        e.preventDefault();
+                        target.click();
+                    }
+                }, { passive: false });
+            }
+        }
+    }
