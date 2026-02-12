@@ -633,7 +633,6 @@ button {
     transition: opacity var(--ease), transform var(--ease);
 }
 
-.video-wrapper:hover > .channel-overlay,
 .video-wrapper.show-controls > .channel-overlay {
     opacity: 1;
     transform: translateY(0);
@@ -716,7 +715,6 @@ button {
     transition: opacity var(--ease);
 }
 
-.video-wrapper:hover .player-controls-overlay,
 .video-wrapper.show-controls .player-controls-overlay {
     opacity: 1;
 }

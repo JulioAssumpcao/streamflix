@@ -17,7 +17,8 @@ class NetflixIPTVPlayer {
         this.sidebarSearchTerm = '';
         this.pendingRequestedChannel = null;
         this.isNowPlayingCollapsed = false;
-        this.mobileControlsTimer = null;
+        this.controlsHideTimer = null;
+        this.controlsHideDelay = 3000;
         this.playlists = {
             india: 'https://iptv-org.github.io/iptv/countries/in.m3u',
             global: 'https://iptv-org.github.io/iptv/index.m3u'
@@ -30,6 +31,7 @@ class NetflixIPTVPlayer {
             this.bindEvents();
             this.initializeSplashScreen();
             this.initializeMobileFeatures();
+            this.setupOverlayVisibilityControls();
             this.loadPlaylist('india');
             this.setupUIEffects();
             this.setupPlayerSidebar(); // Setup sidebar functionality
@@ -252,6 +254,20 @@ class NetflixIPTVPlayer {
             this.categoryFilter.addEventListener('change', (e) => this.filterByCategory(e.target.value));
         }
 
+        if (this.videoWrapper) {
+            this.videoWrapper.addEventListener('mousemove', () => this.setControlsOverlayVisible(true, true));
+            this.videoWrapper.addEventListener('touchstart', () => this.setControlsOverlayVisible(true, true), { passive: true });
+            this.videoWrapper.addEventListener('click', (e) => {
+                const interactiveTarget = e.target.closest('button, input, .sidebar, a, select');
+                if (interactiveTarget) return;
+                if (e.target === this.videoPlayer) {
+                    this.toggleControlsOverlay();
+                } else {
+                    this.setControlsOverlayVisible(true, true);
+                }
+            });
+        }
+
         // Window events
         window.addEventListener('scroll', () => this.handleScroll());
         document.addEventListener('keydown', (e) => this.handleKeyboard(e));
@@ -274,6 +290,35 @@ class NetflixIPTVPlayer {
 
     setupUIEffects() {
         // Intentionally handled via CSS only to keep runtime lightweight.
+    }
+
+    setupOverlayVisibilityControls() {
+        this.setControlsOverlayVisible(true, true);
+    }
+
+    toggleControlsOverlay() {
+        if (!this.videoWrapper) return;
+        const isVisible = this.videoWrapper.classList.contains('show-controls');
+        this.setControlsOverlayVisible(!isVisible, !isVisible);
+    }
+
+    setControlsOverlayVisible(visible, autoHide = false) {
+        if (!this.videoWrapper) return;
+        this.videoWrapper.classList.toggle('show-controls', visible);
+
+        if (this.controlsHideTimer) {
+            clearTimeout(this.controlsHideTimer);
+            this.controlsHideTimer = null;
+        }
+
+        if (visible && autoHide) {
+            this.controlsHideTimer = setTimeout(() => {
+                if (this.videoWrapper) {
+                    this.videoWrapper.classList.remove('show-controls');
+                }
+                this.controlsHideTimer = null;
+            }, this.controlsHideDelay);
+        }
     }
 
     renderPlayerChannelList(channels = this.filteredChannels) {
@@ -1119,6 +1164,7 @@ class NetflixIPTVPlayer {
         if (this.videoWrapper) {
             this.videoWrapper.classList.remove('is-paused');
         }
+        this.setControlsOverlayVisible(true, true);
         const playIcon = this.playPauseBtn.querySelector('i');
         playIcon.className = 'fas fa-pause';
         this.showLoading(false);
@@ -1130,6 +1176,7 @@ class NetflixIPTVPlayer {
         if (this.videoWrapper) {
             this.videoWrapper.classList.add('is-paused');
         }
+        this.setControlsOverlayVisible(true, true);
         const playIcon = this.playPauseBtn.querySelector('i');
         playIcon.className = 'fas fa-play';
     }
@@ -1154,6 +1201,7 @@ class NetflixIPTVPlayer {
 
     onCanPlay() {
         this.showLoading(false);
+        this.setControlsOverlayVisible(true, true);
     }
 
     showLoading(show) {
@@ -1206,17 +1254,6 @@ class NetflixIPTVPlayer {
     initializeMobileFeatures() {
         if (this.isMobileDevice()) {
             console.log('Mobile device detected - optimizing controls');
-
-            // On touch devices, tap video to toggle controls visibility.
-            this.videoPlayer.addEventListener('click', (e) => {
-                if (e.target === this.videoPlayer) {
-                    const currentlyVisible = this.videoWrapper.classList.contains('show-controls');
-                    this.setMobileControlsVisible(!currentlyVisible, true);
-                }
-            });
-
-            // Show controls initially, then auto-hide.
-            this.setMobileControlsVisible(true, true);
             
             // Prevent double-tap zoom on controls
             const controls = document.querySelector('.player-controls-overlay');
@@ -1224,29 +1261,12 @@ class NetflixIPTVPlayer {
                 controls.addEventListener('touchend', (e) => {
                     const target = e.target.closest('button, input');
                     if (target) {
-                        this.setMobileControlsVisible(true, true);
+                        this.setControlsOverlayVisible(true, true);
                         e.preventDefault();
                         target.click();
                     }
                 }, { passive: false });
             }
-        }
-    }
-
-    setMobileControlsVisible(visible, autoHide = false) {
-        if (!this.videoWrapper) return;
-        this.videoWrapper.classList.toggle('show-controls', visible);
-
-        if (this.mobileControlsTimer) {
-            clearTimeout(this.mobileControlsTimer);
-            this.mobileControlsTimer = null;
-        }
-
-        if (visible && autoHide) {
-            this.mobileControlsTimer = setTimeout(() => {
-                this.videoWrapper.classList.remove('show-controls');
-                this.mobileControlsTimer = null;
-            }, 2800);
         }
     }
 }
