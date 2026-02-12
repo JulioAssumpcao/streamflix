@@ -6,17 +6,106 @@ class NetflixIPTVPlayer {
         this.isPlaying = false;
         this.isMuted = false;
         this.currentHls = null; // Current HLS.js instance
+        this.channelLoadToken = 0;
+        this.channelStartedAt = null;
+        this.programTicker = null;
+        this.currentSidebarChannel = null;
+        this.sidebarChannelsView = [];
+        this.sidebarVisibleCount = 0;
+        this.sidebarPageSize = 0;
+        this.sidebarChunkSize = 10;
+        this.sidebarSearchTerm = '';
+        this.pendingRequestedChannel = null;
+        this.isNowPlayingCollapsed = false;
         this.playlists = {
             india: 'https://iptv-org.github.io/iptv/countries/in.m3u',
             global: 'https://iptv-org.github.io/iptv/index.m3u'
         };
         
         this.initializeElements();
-        this.bindEvents();
-        this.initializeSplashScreen();
-        this.initializeMobileFeatures();
-        this.loadPlaylist('india');
-        this.setupUIEffects();
+        
+        // Only proceed with initialization if we have the essential elements
+        if (this.videoPlayer) {
+            this.bindEvents();
+            this.initializeSplashScreen();
+            this.initializeMobileFeatures();
+            this.loadPlaylist('india');
+            this.setupUIEffects();
+            this.setupPlayerSidebar(); // Setup sidebar functionality
+            
+            // Check for channel parameter in URL
+            this.checkUrlParameters();
+        } else {
+            console.log('⚠️ Essential player elements not found - skipping player initialization');
+        }
+    }
+
+    checkUrlParameters() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const channelId = urlParams.get('channel');
+        const streamUrl = urlParams.get('stream');
+        const channelName = urlParams.get('name');
+        const channelGroup = urlParams.get('group');
+        const channelLogo = urlParams.get('logo');
+
+        if (channelId || streamUrl || channelName) {
+            this.pendingRequestedChannel = {
+                channelId,
+                streamUrl,
+                name: channelName,
+                group: channelGroup,
+                logo: channelLogo
+            };
+            console.log('🎯 Channel request found in URL params:', this.pendingRequestedChannel);
+            this.applyPendingRequestedChannel();
+        } else {
+            console.log('ℹ️ No channel parameter in URL');
+        }
+    }
+
+    applyPendingRequestedChannel() {
+        if (!this.pendingRequestedChannel || this.channels.length === 0) return;
+
+        const { channelId, streamUrl, name } = this.pendingRequestedChannel;
+        let targetIndex = -1;
+
+        if (streamUrl) {
+            targetIndex = this.channels.findIndex((c) => c.url === streamUrl);
+        }
+        if (targetIndex === -1 && channelId !== null && channelId !== undefined) {
+            targetIndex = this.channels.findIndex((c) => String(c.id) === String(channelId));
+        }
+        if (targetIndex === -1 && name) {
+            const wanted = name.toLowerCase();
+            targetIndex = this.channels.findIndex((c) => c.name.toLowerCase() === wanted);
+        }
+
+        if (targetIndex !== -1) {
+            console.log(`🎬 Playing requested channel: ${this.channels[targetIndex].name}`);
+            this.currentChannelIndex = targetIndex;
+            this.selectChannel(targetIndex);
+            this.renderPlayerChannelList(this.filteredChannels);
+            this.pendingRequestedChannel = null;
+            return;
+        }
+
+        // Fallback: play the explicit stream URL even if it doesn't map to parsed list.
+        if (streamUrl) {
+            const fallbackChannel = {
+                name: name || 'Requested Channel',
+                group: this.pendingRequestedChannel.group || 'Live',
+                logo: this.pendingRequestedChannel.logo || '',
+                resolution: 'LIVE',
+                url: streamUrl
+            };
+            console.log('⚠️ Requested channel not found in parsed list, using direct stream fallback');
+            this.currentChannelIndex = -1;
+            this.updateChannelInfo(fallbackChannel);
+            this.updateSidebarInfo(fallbackChannel);
+            this.updateProgramPanel(fallbackChannel);
+            this.loadChannel(streamUrl);
+            this.pendingRequestedChannel = null;
+        }
     }
 
     initializeSplashScreen() {
@@ -55,49 +144,112 @@ class NetflixIPTVPlayer {
 
         // Sidebar elements
         this.sidebar = document.getElementById('sidebar');
+        this.sidebarSearch = document.getElementById('sidebar-search');
+        this.playerChannelList = document.getElementById('player-channel-list');
+        this.channelCount = document.getElementById('channel-count');
+        this.sidebarLoadMoreBtn = document.getElementById('sidebar-load-more');
+        this.nowPlayingSection = document.querySelector('.now-playing');
+        this.toggleNowPlayingBtn = document.getElementById('toggle-now-playing');
         this.playlistSelect = document.getElementById('playlist-select');
         this.searchInput = document.getElementById('search-input');
         this.categoryFilter = document.getElementById('category-filter');
-        this.channelList = document.getElementById('channel-list');
+        this.channelList = document.getElementById('channel-list'); // Homepage only
         this.sidebarChannelLogo = document.getElementById('sidebar-channel-logo');
         this.sidebarChannelName = document.getElementById('sidebar-channel-name');
         this.sidebarChannelInfo = document.getElementById('sidebar-channel-info');
+        this.programCurrentEl = document.getElementById('program-current');
+        this.programSlotEl = document.getElementById('program-slot');
+        this.programNextEl = document.getElementById('program-next');
+        this.programRemainingEl = document.getElementById('program-remaining');
+        this.programProgressFillEl = document.getElementById('program-progress-fill');
+        this.sessionDurationEl = document.getElementById('session-duration');
+        this.streamFormatEl = document.getElementById('stream-format');
+        this.streamSourceEl = document.getElementById('stream-source');
 
-        // Set initial volume
-        this.videoPlayer.volume = 0.8;
-        this.volumeSlider.value = 80;
-        this.lastVolume = 0.8;
+        // Debug logging
+        console.log('🔍 Element initialization results:');
+        console.log('- Video player:', !!this.videoPlayer);
+        console.log('- Sidebar:', !!this.sidebar);
+        console.log('- Toggle sidebar btn:', !!this.toggleSidebarBtn);
+        console.log('- Close sidebar btn:', !!this.closeSidebarBtn);
+        console.log('- Sidebar search:', !!this.sidebarSearch);
+        console.log('- Player channel list:', !!this.playerChannelList);
+
+        // Set initial volume only if video player exists
+        if (this.videoPlayer) {
+            this.videoPlayer.volume = 0.8;
+            this.lastVolume = 0.8;
+            if (this.videoWrapper) {
+                this.videoWrapper.classList.add('is-paused');
+            }
+        }
+        
+        if (this.volumeSlider) {
+            this.volumeSlider.value = 80;
+        }
+        
         this.isMuted = false;
         this.isTheaterMode = false;
         
-        console.log('Player initialized');
+        console.log('Player elements initialized');
     }
 
     bindEvents() {
         // Video player events
-        this.videoPlayer.addEventListener('play', () => this.onPlay());
-        this.videoPlayer.addEventListener('pause', () => this.onPause());
-        this.videoPlayer.addEventListener('error', (e) => this.onError(e));
-        this.videoPlayer.addEventListener('loadstart', () => this.onLoadStart());
-        this.videoPlayer.addEventListener('canplay', () => this.onCanPlay());
-        this.videoPlayer.addEventListener('timeupdate', () => this.updateProgress());
+        if (this.videoPlayer) {
+            this.videoPlayer.addEventListener('play', () => this.onPlay());
+            this.videoPlayer.addEventListener('pause', () => this.onPause());
+            this.videoPlayer.addEventListener('error', (e) => this.onError(e));
+            this.videoPlayer.addEventListener('loadstart', () => this.onLoadStart());
+            this.videoPlayer.addEventListener('canplay', () => this.onCanPlay());
+            this.videoPlayer.addEventListener('timeupdate', () => this.updateProgress());
+        }
 
-        // Control button events
-        this.playPauseBtn.addEventListener('click', () => this.togglePlayPause());
-        this.prevChannelBtn.addEventListener('click', () => this.previousChannel());
-        this.nextChannelBtn.addEventListener('click', () => this.nextChannel());
-        this.volumeSlider.addEventListener('input', (e) => this.setVolume(e.target.value));
-        this.muteToggleBtn.addEventListener('click', () => this.toggleMute());
-        this.fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
-        this.pipBtn.addEventListener('click', () => this.togglePiP());
-        this.theaterBtn.addEventListener('click', () => this.toggleTheaterMode());
+        // Control button events - only bind if elements exist
+        if (this.playPauseBtn) {
+            this.playPauseBtn.addEventListener('click', () => this.togglePlayPause());
+        }
+        if (this.prevChannelBtn) {
+            this.prevChannelBtn.addEventListener('click', () => this.previousChannel());
+        }
+        if (this.nextChannelBtn) {
+            this.nextChannelBtn.addEventListener('click', () => this.nextChannel());
+        }
+        if (this.volumeSlider) {
+            this.volumeSlider.addEventListener('input', (e) => this.setVolume(e.target.value));
+        }
+        if (this.muteToggleBtn) {
+            this.muteToggleBtn.addEventListener('click', () => this.toggleMute());
+        }
+        if (this.fullscreenBtn) {
+            this.fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
+        }
+        if (this.pipBtn) {
+            this.pipBtn.addEventListener('click', () => this.togglePiP());
+        }
+        if (this.theaterBtn) {
+            this.theaterBtn.addEventListener('click', () => this.toggleTheaterMode());
+        }
 
         // Sidebar events
-        this.toggleSidebarBtn.addEventListener('click', () => this.toggleSidebar());
-        this.closeSidebarBtn.addEventListener('click', () => this.toggleSidebar());
-        this.playlistSelect.addEventListener('change', (e) => this.loadPlaylist(e.target.value));
-        this.searchInput.addEventListener('input', (e) => this.filterChannels(e.target.value));
-        this.categoryFilter.addEventListener('change', (e) => this.filterByCategory(e.target.value));
+        if (this.toggleSidebarBtn) {
+            this.toggleSidebarBtn.addEventListener('click', () => this.toggleSidebar());
+        }
+        if (this.closeSidebarBtn) {
+            this.closeSidebarBtn.addEventListener('click', () => this.toggleSidebar());
+        }
+        if (this.toggleNowPlayingBtn) {
+            this.toggleNowPlayingBtn.addEventListener('click', () => this.toggleNowPlaying());
+        }
+        if (this.playlistSelect) {
+            this.playlistSelect.addEventListener('change', (e) => this.loadPlaylist(e.target.value));
+        }
+        if (this.searchInput) {
+            this.searchInput.addEventListener('input', (e) => this.filterChannels(e.target.value));
+        }
+        if (this.categoryFilter) {
+            this.categoryFilter.addEventListener('change', (e) => this.filterByCategory(e.target.value));
+        }
 
         // Window events
         window.addEventListener('scroll', () => this.handleScroll());
@@ -110,28 +262,171 @@ class NetflixIPTVPlayer {
 
         // Navbar scroll effect
         window.addEventListener('scroll', () => {
-            const navbar = document.querySelector('.navbar');
-            if (window.scrollY > 50) {
+            const navbar = document.querySelector('.navbar') || document.querySelector('.player-navbar');
+            if (navbar && window.scrollY > 50) {
                 navbar.classList.add('scrolled');
-            } else {
+            } else if (navbar) {
                 navbar.classList.remove('scrolled');
             }
         });
     }
 
     setupUIEffects() {
-        // Add hover effects to cards
-        document.addEventListener('mouseover', (e) => {
-            if (e.target.closest('.channel-card')) {
-                e.target.closest('.channel-card').style.transform = 'translateY(-10px) scale(1.02)';
-            }
+        // Intentionally handled via CSS only to keep runtime lightweight.
+    }
+
+    renderPlayerChannelList(channels = this.filteredChannels) {
+        if (!this.playerChannelList) {
+            console.log('ℹ️ No player channel list element found');
+            return;
+        }
+
+        this.sidebarChannelsView = channels;
+        const visibleChannels = channels.slice(0, this.sidebarVisibleCount || channels.length);
+
+        console.log(`📺 Rendering ${visibleChannels.length}/${channels.length} channels to player sidebar`);
+        this.playerChannelList.innerHTML = '';
+
+        if (this.channelCount) {
+            this.channelCount.textContent = channels.length;
+        }
+
+        if (channels.length === 0) {
+            this.playerChannelList.innerHTML = `
+                <div class="no-channels-message">
+                    <i class="fas fa-search"></i>
+                    <p>No channels found</p>
+                </div>
+            `;
+            return;
+        }
+
+        visibleChannels.forEach((channel, index) => {
+            const realIndex = this.channels.findIndex(c => c.id === channel.id);
+            const isActive = this.currentChannelIndex === realIndex;
+            const logo = channel.logo || '';
+            const channelElement = document.createElement('div');
+            channelElement.className = `channel-list-item ${isActive ? 'active' : ''}`;
+            channelElement.innerHTML = `
+                <div class="channel-logo-small" style="background: ${this.getChannelColor(channel.group)}">
+                    ${logo ? `<img src="${logo}" alt="${channel.name}" onerror="this.style.display='none'">` : 
+                      `<span>${channel.name.charAt(0)}</span>`}
+                </div>
+                <div class="channel-info-small">
+                    <h5>${channel.name}</h5>
+                    <p>${channel.group}</p>
+                </div>
+                ${isActive ? '<div class="play-indicator"><i class="fas fa-play"></i></div>' : ''}
+            `;
+            
+            channelElement.addEventListener('click', () => {
+                this.playSpecificChannelById(channel.id);
+            });
+            
+            this.playerChannelList.appendChild(channelElement);
         });
 
-        document.addEventListener('mouseout', (e) => {
-            if (e.target.closest('.channel-card')) {
-                e.target.closest('.channel-card').style.transform = '';
-            }
-        });
+        this.updateSidebarLoadMoreButton();
+    }
+
+    getChannelColor(group) {
+        const colors = {
+            'News': '#e50914',
+            'Sports': '#00bfff',
+            'Entertainment': '#ff6b6b',
+            'Music': '#9b59b6',
+            'Kids': '#2ecc71',
+            'Movies': '#f39c12'
+        };
+        return colors[group] || '#6c757d';
+    }
+
+    playSpecificChannel(index) {
+        const channel = this.filteredChannels[index];
+        if (!channel) return;
+
+        const realIndex = this.channels.findIndex((c) => c.id === channel.id);
+        if (realIndex >= 0) {
+            this.currentChannelIndex = realIndex;
+            this.selectChannel(realIndex);
+            this.renderPlayerChannelList(this.filteredChannels);
+        }
+    }
+
+    playSpecificChannelById(channelId) {
+        const realIndex = this.channels.findIndex((c) => c.id === channelId);
+        if (realIndex === -1) return;
+        this.currentChannelIndex = realIndex;
+        this.selectChannel(realIndex);
+        this.renderPlayerChannelList(this.filteredChannels);
+    }
+
+    setupPlayerSidebar() {
+        // Bind sidebar search
+        if (this.sidebarSearch) {
+            this.sidebarSearch.addEventListener('input', (e) => {
+                this.filterPlayerChannels(e.target.value);
+            });
+        }
+
+        if (this.sidebarLoadMoreBtn) {
+            this.sidebarLoadMoreBtn.addEventListener('click', () => this.loadMoreSidebarChannels());
+        }
+        
+        // Render initial channel list
+        this.resetSidebarPagination(this.filteredChannels);
+    }
+
+    filterPlayerChannels(searchTerm) {
+        this.sidebarSearchTerm = (searchTerm || '').trim().toLowerCase();
+        const filtered = this.channels.filter(channel =>
+            channel.name.toLowerCase().includes(this.sidebarSearchTerm) ||
+            channel.group.toLowerCase().includes(this.sidebarSearchTerm)
+        );
+        this.filteredChannels = filtered;
+        this.resetSidebarPagination(filtered);
+
+        if (this.playerChannelList) {
+            this.playerChannelList.scrollTop = 0;
+        }
+    }
+
+    resetSidebarPagination(channels) {
+        this.sidebarChannelsView = channels;
+        this.sidebarPageSize = channels.length > 0 ? this.sidebarChunkSize : 0;
+        this.sidebarVisibleCount = Math.min(this.sidebarPageSize, channels.length);
+        this.renderPlayerChannelList(channels);
+    }
+
+    loadMoreSidebarChannels() {
+        if (this.sidebarVisibleCount >= this.sidebarChannelsView.length) return;
+        this.sidebarVisibleCount = Math.min(
+            this.sidebarVisibleCount + this.sidebarPageSize,
+            this.sidebarChannelsView.length
+        );
+        this.renderPlayerChannelList(this.sidebarChannelsView);
+    }
+
+    updateSidebarLoadMoreButton() {
+        if (!this.sidebarLoadMoreBtn) return;
+        const hasMore = this.sidebarVisibleCount < this.sidebarChannelsView.length;
+        this.sidebarLoadMoreBtn.style.display = hasMore ? 'inline-flex' : 'none';
+    }
+
+    toggleNowPlaying(forceCollapsed = null) {
+        if (!this.nowPlayingSection || !this.toggleNowPlayingBtn) return;
+
+        const collapsed = typeof forceCollapsed === 'boolean'
+            ? forceCollapsed
+            : !this.nowPlayingSection.classList.contains('collapsed');
+        this.isNowPlayingCollapsed = collapsed;
+        this.nowPlayingSection.classList.toggle('collapsed', collapsed);
+
+        const icon = this.toggleNowPlayingBtn.querySelector('i');
+        if (icon) {
+            icon.className = collapsed ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
+        }
+        this.toggleNowPlayingBtn.title = collapsed ? 'Show now playing details' : 'Hide now playing details';
     }
 
     async loadPlaylist(type) {
@@ -154,7 +449,11 @@ class NetflixIPTVPlayer {
             
             this.parsePlaylist(playlistText);
             console.log(`🎯 Parsed ${this.channels.length} channels`);
+            const searchTerm = this.sidebarSearch ? this.sidebarSearch.value : this.sidebarSearchTerm;
+            this.filterPlayerChannels(searchTerm || '');
+            this.applyPendingRequestedChannel();
             
+            // Homepage-only UI hooks are guarded internally for player page.
             this.renderChannelGrid();
             this.populateCategories();
             this.showLoading(false);
@@ -224,7 +523,7 @@ class NetflixIPTVPlayer {
             name: name.replace(/\s*\(\d+p\)$/, ''),
             group: groupTitle,
             logo: tvgLogo || '',
-            id: tvgId || '',
+            tvgId: tvgId || '',
             resolution: resolution,
             originalName: name
         };
@@ -242,6 +541,13 @@ class NetflixIPTVPlayer {
 
     renderChannelGrid(channels = this.filteredChannels) {
         console.log(`🎨 Rendering ${channels.length} channels to grid`);
+        
+        // Only render if channel list element exists (homepage only)
+        if (!this.channelList) {
+            console.log('ℹ️ No channel list element found - skipping grid render');
+            return;
+        }
+        
         this.channelList.innerHTML = '';
 
         if (channels.length === 0) {
@@ -269,13 +575,19 @@ class NetflixIPTVPlayer {
         card.className = 'channel-card';
         card.dataset.channelId = channel.id;
         card.dataset.realIndex = this.channels.findIndex(c => c.id === channel.id);
+        const fallbackInitial = channel.name ? channel.name.charAt(0).toUpperCase() : 'TV';
 
         card.innerHTML = `
             <div class="channel-thumbnail">
-                ${channel.logo ? 
-                    `<img src="${channel.logo}" alt="${channel.name}" class="channel-logo-img" onerror="this.parentElement.innerHTML='<i class=\\'fas fa-tv channel-placeholder\\'></i>'">` : 
-                    `<i class="fas fa-tv channel-placeholder"></i>`
-                }
+                <div class="channel-placeholder" style="background: ${this.getChannelColor(channel.group)}">
+                    <i class="fas fa-tv"></i>
+                    <span>${fallbackInitial}</span>
+                </div>
+                <div class="channel-logo-badge">
+                    ${channel.logo
+                        ? `<img src="${channel.logo}" alt="${channel.name} logo" onerror="this.parentElement.innerHTML='<span>${fallbackInitial}</span>'">`
+                        : `<span>${fallbackInitial}</span>`}
+                </div>
             </div>
             <div class="channel-info">
                 <div class="channel-name">${channel.name}</div>
@@ -295,6 +607,11 @@ class NetflixIPTVPlayer {
     }
 
     populateCategories() {
+        if (!this.categoryFilter) {
+            console.log('ℹ️ No category filter element found - skipping category population');
+            return;
+        }
+
         const categories = [...new Set(this.channels.map(channel => channel.group))];
         this.categoryFilter.innerHTML = '<option value="all">All Categories</option>';
         
@@ -319,6 +636,7 @@ class NetflixIPTVPlayer {
         this.updateActiveChannel(realIndex);
         this.updateChannelInfo(channel);
         this.updateSidebarInfo(channel);
+        this.updateProgramPanel(channel);
         
         // Load and play the channel
         this.currentChannelIndex = realIndex;
@@ -362,11 +680,97 @@ class NetflixIPTVPlayer {
         }
     }
 
+    updateProgramPanel(channel) {
+        this.currentSidebarChannel = channel;
+        this.channelStartedAt = Date.now();
+        this.renderProgramPanel();
+
+        if (this.programTicker) {
+            clearInterval(this.programTicker);
+        }
+        this.programTicker = setInterval(() => this.renderProgramPanel(), 1000);
+    }
+
+    renderProgramPanel() {
+        if (!this.currentSidebarChannel) return;
+
+        const channel = this.currentSidebarChannel;
+        const now = new Date();
+        const slotStart = new Date(now);
+        slotStart.setMinutes(0, 0, 0);
+        const slotEnd = new Date(slotStart.getTime() + 60 * 60 * 1000);
+        const elapsed = now.getTime() - slotStart.getTime();
+        const progress = Math.max(0, Math.min(100, (elapsed / (60 * 60 * 1000)) * 100));
+        const remainingMin = Math.max(0, Math.ceil((slotEnd.getTime() - now.getTime()) / 60000));
+
+        const currentProgram = this.getEstimatedProgramTitle(channel, 0);
+        const nextProgram = this.getEstimatedProgramTitle(channel, 1);
+        const sessionMs = this.channelStartedAt ? Date.now() - this.channelStartedAt : 0;
+
+        if (this.programCurrentEl) this.programCurrentEl.textContent = currentProgram;
+        if (this.programSlotEl) this.programSlotEl.textContent = `${this.formatTime(slotStart)} - ${this.formatTime(slotEnd)}`;
+        if (this.programNextEl) this.programNextEl.textContent = nextProgram;
+        if (this.programRemainingEl) this.programRemainingEl.textContent = `Remaining: ${remainingMin}m`;
+        if (this.programProgressFillEl) this.programProgressFillEl.style.width = `${progress}%`;
+        if (this.sessionDurationEl) this.sessionDurationEl.textContent = this.formatDuration(sessionMs);
+        if (this.streamFormatEl) this.streamFormatEl.textContent = this.getStreamFormat(channel.url);
+        if (this.streamSourceEl) this.streamSourceEl.textContent = this.getSourceHost(channel.url);
+    }
+
+    getEstimatedProgramTitle(channel, offset = 0) {
+        const group = (channel.group || 'General').trim();
+        const presets = {
+            News: ['Live Bulletin', 'Prime Debate', 'Top Headlines', 'Breaking Desk'],
+            Sports: ['Live Match Center', 'Sports Roundup', 'Highlights Show', 'Post Match Analysis'],
+            Entertainment: ['Drama Hour', 'Star Showcase', 'Evening Special', 'Prime Entertainment'],
+            Music: ['Music Mix Live', 'Top Charts', 'Retro Beats', 'Live Requests'],
+            Movies: ['Movie Showcase', 'Cinema Express', 'Blockbuster Hour', 'Late Night Cinema'],
+            Kids: ['Kids Fun Time', 'Cartoon Express', 'Family Hour', 'Adventure Time']
+        };
+        const pool = presets[group] || ['Live Broadcast', 'Special Program', 'Prime Slot', 'Featured Stream'];
+        const hash = (channel.name || '').split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+        const index = (new Date().getHours() + hash + offset) % pool.length;
+        return pool[index];
+    }
+
+    formatTime(dateObj) {
+        return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    formatDuration(ms) {
+        const total = Math.max(0, Math.floor(ms / 1000));
+        const h = String(Math.floor(total / 3600)).padStart(2, '0');
+        const m = String(Math.floor((total % 3600) / 60)).padStart(2, '0');
+        const s = String(total % 60).padStart(2, '0');
+        return `${h}:${m}:${s}`;
+    }
+
+    getStreamFormat(url = '') {
+        const clean = url.split('?')[0].toLowerCase();
+        if (clean.includes('.m3u8')) return 'HLS (.m3u8)';
+        if (clean.includes('.mp4')) return 'MP4';
+        if (clean.includes('.ts')) return 'MPEG-TS';
+        if (clean.includes('.webm')) return 'WebM';
+        return 'Live Stream';
+    }
+
+    getSourceHost(url = '') {
+        try {
+            return new URL(url).hostname || '--';
+        } catch (error) {
+            return '--';
+        }
+    }
+
     loadChannel(url) {
         console.log('Loading channel:', url);
         this.showLoading(true);
         
         const video = this.videoPlayer;
+        const loadToken = ++this.channelLoadToken;
+
+        // Stop current playback before replacing source.
+        video.pause();
         
         // Destroy previous HLS instance if exists
         if (this.currentHls) {
@@ -387,13 +791,26 @@ class NetflixIPTVPlayer {
             hls.attachMedia(video);
             
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                // Ignore stale events from superseded load requests.
+                if (loadToken !== this.channelLoadToken || hls !== this.currentHls) return;
                 console.log('HLS Manifest parsed, playing...');
-                video.play()
+                const playPromise = video.play();
+                if (!playPromise || typeof playPromise.then !== 'function') {
+                    this.showLoading(false);
+                    return;
+                }
+                playPromise
                     .then(() => {
+                        if (loadToken !== this.channelLoadToken) return;
                         console.log('Playing successfully');
                         this.showLoading(false);
                     })
                     .catch(error => {
+                        if (loadToken !== this.channelLoadToken) return;
+                        if (error && error.name === 'AbortError') {
+                            console.log('Play request superseded by a newer channel load');
+                            return;
+                        }
                         console.log('Autoplay blocked:', error);
                         this.showLoading(false);
                     });
@@ -427,12 +844,24 @@ class NetflixIPTVPlayer {
             console.log('Using native HLS support');
             video.src = url;
             video.addEventListener('loadedmetadata', () => {
-                video.play()
+                if (loadToken !== this.channelLoadToken) return;
+                const playPromise = video.play();
+                if (!playPromise || typeof playPromise.then !== 'function') {
+                    this.showLoading(false);
+                    return;
+                }
+                playPromise
                     .then(() => {
+                        if (loadToken !== this.channelLoadToken) return;
                         console.log('Playing with native HLS');
                         this.showLoading(false);
                     })
                     .catch(error => {
+                        if (loadToken !== this.channelLoadToken) return;
+                        if (error && error.name === 'AbortError') {
+                            console.log('Native play request superseded by a newer channel load');
+                            return;
+                        }
                         console.log('Autoplay blocked:', error);
                         this.showLoading(false);
                     });
@@ -447,7 +876,16 @@ class NetflixIPTVPlayer {
 
     togglePlayPause() {
         if (this.videoPlayer.paused) {
-            this.videoPlayer.play();
+            const playPromise = this.videoPlayer.play();
+            if (playPromise && typeof playPromise.catch === 'function') {
+                playPromise.catch((error) => {
+                    if (error && error.name === 'AbortError') {
+                        console.log('Manual play interrupted by source change');
+                        return;
+                    }
+                    console.log('Play request failed:', error);
+                });
+            }
         } else {
             this.videoPlayer.pause();
         }
@@ -501,8 +939,22 @@ class NetflixIPTVPlayer {
         }
     }
 
-    toggleSidebar() {
-        this.sidebar.classList.toggle('open');
+    isSidebarOpen() {
+        return !!(this.sidebar && this.sidebar.classList.contains('open'));
+    }
+
+    toggleSidebar(forceOpen = null) {
+        if (!this.sidebar) {
+            console.error('❌ Sidebar element not found');
+            return;
+        }
+
+        const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !this.isSidebarOpen();
+        this.sidebar.classList.toggle('open', shouldOpen);
+
+        if (shouldOpen && this.sidebarSearch) {
+            setTimeout(() => this.sidebarSearch.focus(), 60);
+        }
     }
 
     filterChannels(searchTerm) {
@@ -522,6 +974,33 @@ class NetflixIPTVPlayer {
     }
 
     handleKeyboard(event) {
+        // Allow escape to close sidebar without triggering player shortcuts.
+        if (event.key === 'Escape' && this.isSidebarOpen()) {
+            this.toggleSidebar(false);
+            return;
+        }
+
+        // Handle escape key to exit fullscreen
+        if (event.key === 'Escape' && document.fullscreenElement) {
+            document.exitFullscreen();
+            return;
+        }
+
+        // Disable all media shortcuts while sidebar is open.
+        if (this.isSidebarOpen()) {
+            return;
+        }
+
+        // Don't hijack keys while typing in form controls.
+        const activeEl = document.activeElement;
+        const isTyping = !!activeEl && (
+            ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeEl.tagName) ||
+            activeEl.isContentEditable
+        );
+        if (isTyping) {
+            return;
+        }
+        
         // Prevent default for media keys
         if ([' ', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'm'].includes(event.key)) {
             event.preventDefault();
@@ -551,6 +1030,14 @@ class NetflixIPTVPlayer {
             case 'F':
                 this.toggleFullscreen();
                 break;
+            case 'p':
+            case 'P':
+                this.togglePiP();
+                break;
+            case 't':
+            case 'T':
+                this.toggleTheaterMode();
+                break;
         }
     }
 
@@ -561,6 +1048,23 @@ class NetflixIPTVPlayer {
         this.setVolume(newVolume);
     }
 
+    onFullscreenChange() {
+        const isFullscreen = !!document.fullscreenElement;
+        const fullscreenIcon = this.fullscreenBtn.querySelector('i');
+        
+        if (isFullscreen) {
+            // Enter fullscreen - hide all UI elements except video
+            document.body.classList.add('fullscreen-active');
+            fullscreenIcon.className = 'fas fa-compress';
+            console.log('Entered fullscreen mode');
+        } else {
+            // Exit fullscreen - restore UI elements
+            document.body.classList.remove('fullscreen-active');
+            fullscreenIcon.className = 'fas fa-expand';
+            console.log('Exited fullscreen mode');
+        }
+    }
+
     toggleFullscreen() {
         if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen().catch(err => {
@@ -568,6 +1072,34 @@ class NetflixIPTVPlayer {
             });
         } else {
             document.exitFullscreen();
+        }
+    }
+
+    async togglePiP() {
+        if (!this.videoPlayer || !document.pictureInPictureEnabled) {
+            this.showError('Picture-in-Picture is not supported in this browser.');
+            return;
+        }
+
+        try {
+            if (document.pictureInPictureElement) {
+                await document.exitPictureInPicture();
+                if (this.pipBtn) this.pipBtn.classList.remove('active');
+            } else {
+                await this.videoPlayer.requestPictureInPicture();
+                if (this.pipBtn) this.pipBtn.classList.add('active');
+            }
+        } catch (error) {
+            console.error('PiP error:', error);
+            this.showError('Unable to toggle Picture-in-Picture.');
+        }
+    }
+
+    toggleTheaterMode() {
+        this.isTheaterMode = !this.isTheaterMode;
+        document.body.classList.toggle('theater-mode', this.isTheaterMode);
+        if (this.theaterBtn) {
+            this.theaterBtn.classList.toggle('active', this.isTheaterMode);
         }
     }
 
@@ -583,6 +1115,9 @@ class NetflixIPTVPlayer {
     // Event handlers
     onPlay() {
         this.isPlaying = true;
+        if (this.videoWrapper) {
+            this.videoWrapper.classList.remove('is-paused');
+        }
         const playIcon = this.playPauseBtn.querySelector('i');
         playIcon.className = 'fas fa-pause';
         this.showLoading(false);
@@ -591,6 +1126,9 @@ class NetflixIPTVPlayer {
 
     onPause() {
         this.isPlaying = false;
+        if (this.videoWrapper) {
+            this.videoWrapper.classList.add('is-paused');
+        }
         const playIcon = this.playPauseBtn.querySelector('i');
         playIcon.className = 'fas fa-play';
     }
@@ -695,9 +1233,38 @@ class NetflixIPTVPlayer {
     }
 }
 
+// Function to safely initialize player
+function initializeStreamFlixPlayer() {
+    console.log('🔍 Checking if player should be initialized...');
+    
+    // Multiple checks to ensure we're on the right page
+    const videoPlayer = document.getElementById('video-player');
+    const playerPage = document.querySelector('.video-player-page');
+    const playerContainer = document.querySelector('.player-container');
+    
+    console.log('Video player element:', videoPlayer);
+    console.log('Player page class:', playerPage);
+    console.log('Player container:', playerContainer);
+    
+    // Only initialize if we're definitely on the player page
+    if (videoPlayer && (playerPage || playerContainer)) {
+        console.log('🎬 StreamFlix Player Initializing...');
+        try {
+            window.netflixPlayer = new NetflixIPTVPlayer();
+            console.log('✅ StreamFlix Player Ready!');
+            return true;
+        } catch (error) {
+            console.error('❌ Player initialization failed:', error);
+            return false;
+        }
+    } else {
+        console.log('🏠 Not on player page or missing essential elements - skipping player initialization');
+        return false;
+    }
+}
+
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🎬 StreamFlix Player Initializing...');
-    window.netflixPlayer = new NetflixIPTVPlayer();
-    console.log('✅ StreamFlix Player Ready!');
+    console.log('📄 DOM Content Loaded');
+    initializeStreamFlixPlayer();
 });

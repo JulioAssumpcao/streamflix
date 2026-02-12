@@ -6,7 +6,43 @@
 
 A modern, Netflix-inspired web-based IPTV player that streams live TV channels from M3U playlists with a premium user experience. Built with vanilla JavaScript and HLS.js for seamless HLS streaming support.
 
-## ✨ Latest Updates (v2.1)
+## ✨ Latest Updates (v2.2)
+
+### 🚀 New Features, Fixes, and UX Improvements
+
+#### **Playback & Channel Selection**
+- **Deterministic Channel Handoff**: Channel selected on homepage now opens the exact same stream on player page (URL now carries `channel`, `stream`, `name`, `group`, `logo`).
+- **No Random Channel Fallback**: Removed behavior where first/random channel could play when opening from homepage.
+- **Start Watching Behavior Updated**: `Start Watching` opens a blank player state (no autoplay) until user explicitly selects a channel.
+- **Play Race Condition Fix**: Handled `AbortError` during rapid channel switches by adding load-token based cancellation safety.
+
+#### **Sidebar UX**
+- **Sidebar Search Reliability**: Searched channels now render/select correctly with pagination and filtering.
+- **Collapsible Now Playing Card**: Added up/down toggle to hide/show current-channel details and free space for channel list browsing.
+- **Keyboard Shortcut Guard**: Player keyboard shortcuts are disabled while sidebar is open and re-enabled when closed.
+- **Scrollable Sidebar Improvements**: Refined scroll containers and behavior for smooth up/down browsing.
+
+#### **Channel Loading Performance**
+- **Fixed Chunk Loading**: Replaced half-split loading with fixed chunks for better scaling:
+  - Homepage channel grid: **50 per load**
+  - Sidebar channel list: **10 per load**
+- **Load More Buttons**: Added and optimized `Load More` controls for homepage and sidebar.
+- **Rendering Optimization**: Reduced runtime UI overhead and added lightweight rendering hints for large channel lists.
+
+#### **Player Overlay & Controls**
+- **Pause-State Overlay Rule**: Channel info overlay on video hides when playback is paused.
+- **Overlay Sync**: Channel info visibility now follows control visibility behavior.
+- **PiP/Theater Stability**: Added missing handlers and improved mode toggles.
+
+#### **Responsive & Mobile**
+- **Responsive Hardening Pass**: Improved behavior across phones/tablets/desktop/large screens.
+- **Safe-Area Support**: Better spacing for notches/home indicators.
+- **Landscape Short-Height Tuning**: Compact controls for small-height landscape screens.
+
+#### **Branding / Assets**
+- **Custom Favicon Wired**: Added `assets/favicon.ico` to homepage and player page.
+
+## ✨ Previous Updates (v2.1)
 
 ### 🎉 Major Fixes & Improvements
 
@@ -150,19 +186,22 @@ python3 -m http.server 8000
 
 ```
 streamflix/
-├── index.html                # Main player interface (with HLS.js & splash)
+├── index.html                # Homepage (hero, rows, search, channel grid)
+├── player.html               # Dedicated player page (video + sidebar)
 ├── splash-preview.html       # Isolated splash screen preview
 ├── test-channels.html        # Debugging tool for playlist testing
 ├── css/
-│   └── netflix-style.css     # Netflix-inspired styling + splash animations
+│   └── netflix-style.css     # Unified Netflix-style UI + responsive system
 ├── js/
-│   └── netflix-player.js     # Core player (703 lines, HLS.js integration)
-├── assets/                   # Images and media files
-├── MOBILE_GUIDE.md          # Comprehensive mobile usage guide
-├── 404.html                 # Error page
-├── _routes.json             # Cloudflare routing config
-├── package.json             # Project metadata
-└── README.md                # This file
+│   ├── homepage.js           # Homepage data/render logic + navigation
+│   └── netflix-player.js     # Core player logic (HLS.js, sidebar, controls)
+├── assets/
+│   └── favicon.ico           # App favicon
+├── MOBILE_GUIDE.md           # Comprehensive mobile usage guide
+├── 404.html                  # Error page
+├── _routes.json              # Cloudflare routing config
+├── package.json              # Project metadata
+└── README.md                 # This file
 ```
 
 ## 🛠️ Technical Details
