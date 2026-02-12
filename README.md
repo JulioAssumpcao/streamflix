@@ -38,6 +38,7 @@ A modern, Netflix-inspired web-based IPTV player that streams live TV channels f
 - **Responsive Hardening Pass**: Improved behavior across phones/tablets/desktop/large screens.
 - **Safe-Area Support**: Better spacing for notches/home indicators.
 - **Landscape Short-Height Tuning**: Compact controls for small-height landscape screens.
+- **Touch Tap Behavior Fix**: On mobile/touch devices, tapping video now toggles controls overlay visibility (show/hide) instead of play/pause.
 
 #### **Branding / Assets**
 - **Custom Favicon Wired**: Added `assets/favicon.ico` to homepage and player page.

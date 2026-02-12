@@ -17,6 +17,7 @@ class NetflixIPTVPlayer {
         this.sidebarSearchTerm = '';
         this.pendingRequestedChannel = null;
         this.isNowPlayingCollapsed = false;
+        this.mobileControlsTimer = null;
         this.playlists = {
             india: 'https://iptv-org.github.io/iptv/countries/in.m3u',
             global: 'https://iptv-org.github.io/iptv/index.m3u'
@@ -1205,18 +1206,17 @@ class NetflixIPTVPlayer {
     initializeMobileFeatures() {
         if (this.isMobileDevice()) {
             console.log('Mobile device detected - optimizing controls');
-            
-            // Always show controls on mobile
-            if (this.videoWrapper) {
-                this.videoWrapper.classList.add('show-controls');
-            }
-            
-            // Add touch event for video tap to play/pause
+
+            // On touch devices, tap video to toggle controls visibility.
             this.videoPlayer.addEventListener('click', (e) => {
                 if (e.target === this.videoPlayer) {
-                    this.togglePlayPause();
+                    const currentlyVisible = this.videoWrapper.classList.contains('show-controls');
+                    this.setMobileControlsVisible(!currentlyVisible, true);
                 }
             });
+
+            // Show controls initially, then auto-hide.
+            this.setMobileControlsVisible(true, true);
             
             // Prevent double-tap zoom on controls
             const controls = document.querySelector('.player-controls-overlay');
@@ -1224,11 +1224,29 @@ class NetflixIPTVPlayer {
                 controls.addEventListener('touchend', (e) => {
                     const target = e.target.closest('button, input');
                     if (target) {
+                        this.setMobileControlsVisible(true, true);
                         e.preventDefault();
                         target.click();
                     }
                 }, { passive: false });
             }
+        }
+    }
+
+    setMobileControlsVisible(visible, autoHide = false) {
+        if (!this.videoWrapper) return;
+        this.videoWrapper.classList.toggle('show-controls', visible);
+
+        if (this.mobileControlsTimer) {
+            clearTimeout(this.mobileControlsTimer);
+            this.mobileControlsTimer = null;
+        }
+
+        if (visible && autoHide) {
+            this.mobileControlsTimer = setTimeout(() => {
+                this.videoWrapper.classList.remove('show-controls');
+                this.mobileControlsTimer = null;
+            }, 2800);
         }
     }
 }
