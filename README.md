@@ -371,7 +371,7 @@ This project is optimized for Cloudflare Pages:
 ```bash
 # Enable GitHub Pages in repository settings
 # Set source to main branch, / (root)
-# Access at: https://username.github.io/streamflix
+# Access at: https://chriz-3656.github.io/streamflix
 ```
 
 ### Manual Deployment
