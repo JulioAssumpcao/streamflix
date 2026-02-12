@@ -18,7 +18,7 @@ class NetflixIPTVPlayer {
         this.pendingRequestedChannel = null;
         this.isNowPlayingCollapsed = false;
         this.controlsHideTimer = null;
-        this.controlsHideDelay = 3000;
+        this.controlsHideDelay = 5000;
         this.playlists = {
             india: 'https://iptv-org.github.io/iptv/countries/in.m3u',
             global: 'https://iptv-org.github.io/iptv/index.m3u'

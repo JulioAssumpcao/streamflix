@@ -32,6 +32,7 @@ A modern, Netflix-inspired web-based IPTV player that streams live TV channels f
 #### **Player Overlay & Controls**
 - **Pause-State Overlay Rule**: Channel info overlay on video hides when playback is paused.
 - **Overlay Sync**: Channel info visibility now follows control visibility behavior.
+- **Overlay Auto-Hide Timing**: Controls + channel overlay now auto-hide after **5 seconds** of inactivity.
 - **PiP/Theater Stability**: Added missing handlers and improved mode toggles.
 
 #### **Responsive & Mobile**
