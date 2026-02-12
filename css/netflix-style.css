@@ -563,6 +563,20 @@ button {
     color: var(--brand);
 }
 
+.developer-credits a {
+    color: #e6e6e6;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.developer-credits a:hover {
+    color: #ffffff;
+}
+
+.footer-handle {
+    color: #f3f3f3;
+}
+
 /* Player */
 .video-player-page {
     background: #000;
