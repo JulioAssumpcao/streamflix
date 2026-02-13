@@ -43,6 +43,12 @@ A modern, Netflix-inspired web-based IPTV player that streams live TV channels f
 
 #### **Branding / Assets**
 - **Custom Favicon Wired**: Added `assets/favicon.ico` to homepage and player page.
+- **PWA Ready Icons**: Added Android/iOS favicon set for install experience.
+
+#### **PWA Support**
+- **Web App Manifest**: Added `manifest.webmanifest` with app metadata, theme color, and install icons.
+- **Service Worker**: Added `sw.js` for app-shell caching and offline-friendly static asset loading.
+- **Auto Registration**: Added `js/pwa-register.js` and wired it to homepage/player.
 
 ## ✨ Previous Updates (v2.1)
 
@@ -196,9 +202,11 @@ streamflix/
 │   └── netflix-style.css     # Unified Netflix-style UI + responsive system
 ├── js/
 │   ├── homepage.js           # Homepage data/render logic + navigation
-│   └── netflix-player.js     # Core player logic (HLS.js, sidebar, controls)
-├── assets/
-│   └── favicon.ico           # App favicon
+│   ├── netflix-player.js     # Core player logic (HLS.js, sidebar, controls)
+│   └── pwa-register.js       # Service worker registration
+├── assets/                   # App icons (favicon + Android/iOS install icons)
+├── manifest.webmanifest      # PWA manifest
+├── sw.js                     # Service worker (app shell cache)
 ├── MOBILE_GUIDE.md           # Comprehensive mobile usage guide
 ├── 404.html                  # Error page
 ├── _routes.json              # Cloudflare routing config
