@@ -1,6 +1,5 @@
-const CACHE_NAME = 'streamflix-shell-v1';
+const CACHE_NAME = 'streamflix-shell-v2';
 const APP_SHELL = [
-  './',
   './index.html',
   './player.html',
   './css/netflix-style.css',
@@ -18,7 +17,16 @@ const APP_SHELL = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
+    caches.open(CACHE_NAME).then(async (cache) => {
+      await Promise.all(
+        APP_SHELL.map(async (asset) => {
+          const response = await fetch(asset, { cache: 'no-cache' });
+          if (response.ok && !response.redirected && response.type === 'basic') {
+            await cache.put(asset, response.clone());
+          }
+        })
+      );
+    })
   );
   self.skipWaiting();
 });
@@ -49,21 +57,47 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) {
-        return cached;
-      }
+  if (request.mode === 'navigate') {
+    event.respondWith(networkFirstNavigation(request));
+    return;
+  }
 
-      return fetch(request).then((response) => {
-        if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response;
-        }
-
-        const responseClone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
-        return response;
-      });
-    })
-  );
+  event.respondWith(cacheFirstAsset(request));
 });
+
+async function networkFirstNavigation(request) {
+  try {
+    const response = await fetch(request);
+    await maybeCacheResponse(request, response);
+    return response;
+  } catch (error) {
+    const cachedPage = await caches.match(request);
+    if (cachedPage) {
+      return cachedPage;
+    }
+    const fallback = await caches.match('./index.html');
+    if (fallback) {
+      return fallback;
+    }
+    return Response.error();
+  }
+}
+
+async function cacheFirstAsset(request) {
+  const cached = await caches.match(request);
+  if (cached) {
+    return cached;
+  }
+
+  const response = await fetch(request);
+  await maybeCacheResponse(request, response);
+  return response;
+}
+
+async function maybeCacheResponse(request, response) {
+  if (!response || !response.ok) return;
+  if (response.redirected || response.type !== 'basic') return;
+
+  const cache = await caches.open(CACHE_NAME);
+  await cache.put(request, response.clone());
+}
