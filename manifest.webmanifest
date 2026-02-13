@@ -2,10 +2,10 @@
   "name": "StreamFlix - Premium IPTV Player",
   "short_name": "StreamFlix",
   "description": "Netflix-style IPTV web player with live streaming and channel browsing.",
-  "start_url": "./index.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "background_color": "#141414",
   "theme_color": "#e50914",
   "icons": [

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'streamflix-shell-v2';
+const CACHE_NAME = 'streamflix-shell-v3';
 const APP_SHELL = [
   './index.html',
   './player.html',
@@ -62,7 +62,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  event.respondWith(cacheFirstAsset(request));
+  if (isVersionedStaticAsset(url.pathname)) {
+    event.respondWith(staleWhileRevalidateAsset(request));
+    return;
+  }
+
+  event.respondWith(networkFirstAsset(request));
 });
 
 async function networkFirstNavigation(request) {
@@ -83,21 +88,56 @@ async function networkFirstNavigation(request) {
   }
 }
 
-async function cacheFirstAsset(request) {
-  const cached = await caches.match(request);
-  if (cached) {
-    return cached;
-  }
-
-  const response = await fetch(request);
-  await maybeCacheResponse(request, response);
-  return response;
-}
-
 async function maybeCacheResponse(request, response) {
   if (!response || !response.ok) return;
   if (response.redirected || response.type !== 'basic') return;
 
   const cache = await caches.open(CACHE_NAME);
   await cache.put(request, response.clone());
+}
+
+function isVersionedStaticAsset(pathname) {
+  return (
+    pathname.endsWith('.css') ||
+    pathname.endsWith('.js') ||
+    pathname.endsWith('.png') ||
+    pathname.endsWith('.ico') ||
+    pathname.endsWith('.webmanifest') ||
+    pathname.endsWith('.json')
+  );
+}
+
+async function staleWhileRevalidateAsset(request) {
+  const cached = await caches.match(request);
+  const networkFetch = fetch(request)
+    .then(async (response) => {
+      await maybeCacheResponse(request, response);
+      return response;
+    })
+    .catch(() => null);
+
+  if (cached) {
+    return cached;
+  }
+
+  const networkResponse = await networkFetch;
+  if (networkResponse) {
+    return networkResponse;
+  }
+
+  return Response.error();
+}
+
+async function networkFirstAsset(request) {
+  try {
+    const response = await fetch(request);
+    await maybeCacheResponse(request, response);
+    return response;
+  } catch (error) {
+    const cached = await caches.match(request);
+    if (cached) {
+      return cached;
+    }
+    return Response.error();
+  }
 }
