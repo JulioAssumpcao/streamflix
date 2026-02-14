@@ -110,7 +110,16 @@
     <!-- Sidebar -->
     <aside class="sidebar player-sidebar" id="sidebar">
         <div class="sidebar-header">
-            <h3>All Channels</h3>
+            <div class="playlist-header-block">
+                <h3>All Channels</h3>
+                <div class="playlist-toggle player-playlist-toggle">
+                    <label for="playlist-select">Playlist</label>
+                    <select id="playlist-select">
+                        <option value="global">Global</option>
+                        <option value="india">India (Optional)</option>
+                    </select>
+                </div>
+            </div>
             <button id="close-sidebar" class="close-btn">
                 <i class="fas fa-times"></i>
             </button>
@@ -209,25 +218,12 @@
     <script src="js/pwa-register.js"></script>
     <script src="js/netflix-player.js"></script>
     <script>
-        // Initialize player with channel data from URL params or localStorage
         document.addEventListener('DOMContentLoaded', function() {
             const backButton = document.getElementById('back-to-home');
             if (backButton) {
                 backButton.addEventListener('click', function() {
                     window.location.href = './index.html';
                 });
-            }
-            
-            // Initialize player with specific channel if provided
-            const urlParams = new URLSearchParams(window.location.search);
-            const channelId = urlParams.get('channel');
-            
-            if (channelId && window.netflixPlayer) {
-                // Load specific channel
-                const channel = window.netflixPlayer.channels.find(c => c.id == channelId);
-                if (channel) {
-                    window.netflixPlayer.playChannel(channel);
-                }
             }
         });
     </script>

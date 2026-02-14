@@ -8,6 +8,11 @@ class StreamFlixHomepage {
         this.allChannelsVisibleCount = 0;
         this.allChannelsPageSize = 0;
         this.allChannelsChunkSize = 50;
+        this.playlists = {
+            global: 'https://iptv-org.github.io/iptv/index.m3u',
+            india: 'https://iptv-org.github.io/iptv/countries/in.m3u'
+        };
+        this.selectedPlaylist = localStorage.getItem('streamflix-preferred-playlist') || 'global';
         
         this.initializeElements();
         this.bindEvents();
@@ -25,6 +30,11 @@ class StreamFlixHomepage {
         this.continueWatchingRow = document.getElementById('continue-watching');
         this.popularChannelsRow = document.getElementById('popular-channels');
         this.categoryCards = document.querySelectorAll('.category-card');
+        this.homePlaylistSelect = document.getElementById('home-playlist-select');
+
+        if (this.homePlaylistSelect) {
+            this.homePlaylistSelect.value = this.selectedPlaylist;
+        }
     }
 
     bindEvents() {
@@ -46,6 +56,14 @@ class StreamFlixHomepage {
 
         if (this.loadMoreHomeBtn) {
             this.loadMoreHomeBtn.addEventListener('click', () => this.loadMoreAllChannels());
+        }
+
+        if (this.homePlaylistSelect) {
+            this.homePlaylistSelect.addEventListener('change', (e) => {
+                const nextPlaylist = e.target.value;
+                this.setPreferredPlaylist(nextPlaylist);
+                this.loadChannels({ forceRefresh: true });
+            });
         }
         
         // Category card clicks
@@ -74,22 +92,35 @@ class StreamFlixHomepage {
         });
     }
 
-    async loadChannels() {
+    getChannelCacheKey() {
+        return `streamflix-channels-${this.selectedPlaylist}`;
+    }
+
+    setPreferredPlaylist(type) {
+        if (!this.playlists[type]) return;
+        this.selectedPlaylist = type;
+        localStorage.setItem('streamflix-preferred-playlist', type);
+    }
+
+    async loadChannels(options = {}) {
+        const { forceRefresh = false } = options;
         try {
             // Load from localStorage first
-            const cachedChannels = localStorage.getItem('streamflix-channels');
-            if (cachedChannels) {
+            const cacheKey = this.getChannelCacheKey();
+            const cachedChannels = localStorage.getItem(cacheKey);
+            if (cachedChannels && !forceRefresh) {
                 this.channels = JSON.parse(cachedChannels);
                 this.processChannels();
                 return;
             }
             
-            // Load from default playlist
-            const response = await fetch('https://iptv-org.github.io/iptv/countries/in.m3u');
+            const playlistUrl = this.playlists[this.selectedPlaylist] || this.playlists.global;
+            console.log(`📡 Loading ${this.selectedPlaylist} playlist from homepage...`);
+            const response = await fetch(playlistUrl);
             const playlistText = await response.text();
             
             this.parsePlaylist(playlistText);
-            localStorage.setItem('streamflix-channels', JSON.stringify(this.channels));
+            localStorage.setItem(cacheKey, JSON.stringify(this.channels));
             this.processChannels();
         } catch (error) {
             console.error('Error loading channels:', error);
@@ -328,7 +359,8 @@ class StreamFlixHomepage {
                 stream: channel.url || '',
                 name: channel.name || '',
                 group: channel.group || '',
-                logo: channel.logo || ''
+                logo: channel.logo || '',
+                playlist: this.selectedPlaylist
             });
             const url = `./player.html?${query.toString()}`;
             console.log('📍 Navigation URL:', url);

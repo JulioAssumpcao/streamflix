@@ -23,6 +23,8 @@ class NetflixIPTVPlayer {
         this.relayEnabled = false;
         this.relayEndpoint = this.resolveRelayEndpoint();
         this.relayHealthEndpoint = this.resolveRelayHealthEndpoint(this.relayEndpoint);
+        this.defaultPlaylistType = this.resolveDefaultPlaylistType();
+        this.activePlaylistType = this.defaultPlaylistType;
         this.playlists = {
             india: 'https://iptv-org.github.io/iptv/countries/in.m3u',
             global: 'https://iptv-org.github.io/iptv/index.m3u'
@@ -37,7 +39,7 @@ class NetflixIPTVPlayer {
             this.initializeMobileFeatures();
             this.setupOverlayVisibilityControls();
             this.detectRelaySupport();
-            this.loadPlaylist('india');
+            this.loadPlaylist(this.defaultPlaylistType);
             this.setupUIEffects();
             this.setupPlayerSidebar(); // Setup sidebar functionality
             
@@ -55,6 +57,16 @@ class NetflixIPTVPlayer {
         const channelName = urlParams.get('name');
         const channelGroup = urlParams.get('group');
         const channelLogo = urlParams.get('logo');
+        const requestedPlaylist = urlParams.get('playlist');
+
+        if (requestedPlaylist && this.playlists[requestedPlaylist]) {
+            this.defaultPlaylistType = requestedPlaylist;
+            this.activePlaylistType = requestedPlaylist;
+            localStorage.setItem('streamflix-preferred-playlist', requestedPlaylist);
+            if (this.playlistSelect) {
+                this.playlistSelect.value = requestedPlaylist;
+            }
+        }
 
         if (channelId || streamUrl || channelName) {
             this.pendingRequestedChannel = {
@@ -482,10 +494,16 @@ class NetflixIPTVPlayer {
 
     async loadPlaylist(type) {
         try {
-            console.log(`📡 Loading ${type} playlist...`);
+            const selectedType = this.playlists[type] ? type : 'global';
+            this.activePlaylistType = selectedType;
+            localStorage.setItem('streamflix-preferred-playlist', selectedType);
+            if (this.playlistSelect) {
+                this.playlistSelect.value = selectedType;
+            }
+            console.log(`📡 Loading ${selectedType} playlist...`);
             this.showLoading(true);
             
-            const url = this.playlists[type];
+            const url = this.playlists[selectedType];
             console.log(`🔗 Fetching from: ${url}`);
             
             const response = await fetch(url);
@@ -515,6 +533,19 @@ class NetflixIPTVPlayer {
             this.showLoading(false);
             this.showError(`Failed to load playlist: ${error.message}`);
         }
+    }
+
+    resolveDefaultPlaylistType() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const fromUrl = urlParams.get('playlist');
+        if (fromUrl && ['global', 'india'].includes(fromUrl)) {
+            return fromUrl;
+        }
+        const stored = localStorage.getItem('streamflix-preferred-playlist');
+        if (stored && ['global', 'india'].includes(stored)) {
+            return stored;
+        }
+        return 'global';
     }
 
     parsePlaylist(playlistText) {

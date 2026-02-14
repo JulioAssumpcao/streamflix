@@ -130,6 +130,34 @@ button {
     gap: 1.2rem;
 }
 
+.playlist-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.35rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.playlist-toggle label {
+    font-size: 0.72rem;
+    color: var(--text-soft);
+}
+
+.playlist-toggle select {
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    font-size: 0.8rem;
+    outline: none;
+    min-width: 88px;
+}
+
+.playlist-toggle select option {
+    color: #111;
+}
+
 .brand-logo {
     display: inline-flex;
     align-items: center;
@@ -909,6 +937,17 @@ button {
     border-bottom: 1px solid var(--line);
 }
 
+.playlist-header-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.player-playlist-toggle {
+    border-radius: var(--radius-sm);
+    padding: 0.25rem 0.5rem;
+}
+
 .close-btn {
     width: 35px;
     height: 35px;
@@ -1340,6 +1379,19 @@ video {
         white-space: nowrap;
     }
 
+    .playlist-toggle {
+        padding: 0.28rem 0.45rem;
+    }
+
+    .playlist-toggle label {
+        display: none;
+    }
+
+    .playlist-toggle select {
+        min-width: 74px;
+        font-size: 0.76rem;
+    }
+
     .hero-showcase {
         min-height: 62dvh;
     }
@@ -1383,6 +1435,14 @@ video {
     .nav-right .nav-pill {
         padding: 0.42rem 0.6rem;
         font-size: 0.75rem;
+    }
+
+    .nav-right {
+        gap: 0.45rem;
+    }
+
+    .playlist-toggle select {
+        min-width: 68px;
     }
 
     .showcase-actions {
