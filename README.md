@@ -50,6 +50,12 @@ A modern, Netflix-inspired web-based IPTV player that streams live TV channels f
 - **Service Worker**: Added `sw.js` for app-shell caching and offline-friendly static asset loading.
 - **Auto Registration**: Added `js/pwa-register.js` and wired it to homepage/player.
 
+#### **Backend Relay (New)**
+- **Browser-Safe Stream Relay**: Added `server.js` with `/api/relay` to proxy upstream HLS playlists/segments.
+- **Manifest Rewriting**: Relay rewrites nested HLS URLs so all segment/key requests stay routed through your server.
+- **CORS + HTTPS Friendly**: Enables web playback for many channels that fail in browser direct mode.
+- **Smart Player Integration**: Frontend auto-detects relay (`/api/relay/health`) and uses it when available.
+
 ## ✨ Previous Updates (v2.1)
 
 ### 🎉 Major Fixes & Improvements
@@ -146,7 +152,7 @@ No installation needed! Works instantly on any device.
 
 **Prerequisites:**
 - Modern web browser (Chrome 70+, Firefox 65+, Safari 12+, Edge 79+)
-- Python 3.x (for local server)
+- Node.js 18+ and npm
 
 **Setup:**
 ```bash
@@ -154,11 +160,14 @@ No installation needed! Works instantly on any device.
 git clone https://github.com/chriz-3656/streamflix.git
 cd streamflix
 
-# Start local server
-python3 -m http.server 8000
+# Install dependencies
+npm install
+
+# Start relay + web server
+npm run dev
 
 # Open browser
-# Visit: http://localhost:8000
+# Visit: http://localhost:8080
 ```
 
 ## 🎯 Usage
@@ -218,11 +227,12 @@ streamflix/
 
 ### Technology Stack
 - **Frontend**: Pure HTML5, CSS3, Vanilla JavaScript (No frameworks!)
+- **Backend**: Node.js + Express relay server
 - **Streaming**: HLS.js v1.5+ for HLS stream support
 - **Video**: HTML5 `<video>` element
 - **Icons**: Font Awesome 6.4.0
 - **Fonts**: Google Fonts (Poppins)
-- **Deployment**: Cloudflare Pages ready
+- **Deployment**: Node host (for relay) + optional CDN/static edge
 
 ### Supported Formats
 - **Playlist Format**: M3U/M3U8 (EXTINF metadata parsing)

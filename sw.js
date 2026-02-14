@@ -57,6 +57,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Never cache API relay responses (stream chunks/manifests must stay fresh).
+  if (url.pathname.startsWith('/api/')) {
+    return;
+  }
+
   if (request.mode === 'navigate') {
     event.respondWith(networkFirstNavigation(request));
     return;

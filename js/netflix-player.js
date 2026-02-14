@@ -20,6 +20,8 @@ class NetflixIPTVPlayer {
         this.controlsHideTimer = null;
         this.controlsHideDelay = 5000;
         this.maxNetworkRetries = 1;
+        this.relayEnabled = false;
+        this.relayEndpoint = '/api/relay';
         this.playlists = {
             india: 'https://iptv-org.github.io/iptv/countries/in.m3u',
             global: 'https://iptv-org.github.io/iptv/index.m3u'
@@ -33,6 +35,7 @@ class NetflixIPTVPlayer {
             this.initializeSplashScreen();
             this.initializeMobileFeatures();
             this.setupOverlayVisibilityControls();
+            this.detectRelaySupport();
             this.loadPlaylist('india');
             this.setupUIEffects();
             this.setupPlayerSidebar(); // Setup sidebar functionality
@@ -813,7 +816,11 @@ class NetflixIPTVPlayer {
         console.log('Loading channel:', url);
         this.showLoading(true);
 
-        const { allowHttpUpgrade = true } = options;
+        const {
+            allowHttpUpgrade = true,
+            forceDirect = false,
+            allowDirectFallback = true
+        } = options;
         let streamUrl = url;
 
         if (this.isMixedContentUrl(streamUrl)) {
@@ -826,6 +833,14 @@ class NetflixIPTVPlayer {
                 this.showError('This channel uses HTTP and is blocked on HTTPS. Try a secure (HTTPS) stream.');
                 return;
             }
+        }
+
+        const usingRelay = this.shouldRelayUrl(streamUrl, forceDirect);
+        const relayTarget = usingRelay ? streamUrl : null;
+        const playbackUrl = usingRelay ? this.buildRelayUrl(streamUrl) : streamUrl;
+
+        if (usingRelay) {
+            console.log('Using StreamFlix relay for playback');
         }
         
         const video = this.videoPlayer;
@@ -850,7 +865,7 @@ class NetflixIPTVPlayer {
                 backBufferLength: 90
             });
             
-            hls.loadSource(streamUrl);
+            hls.loadSource(playbackUrl);
             hls.attachMedia(video);
             
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -885,6 +900,15 @@ class NetflixIPTVPlayer {
                     const classifiedError = this.classifyPlaybackError(data, streamUrl, channel);
                     switch (data.type) {
                         case Hls.ErrorTypes.NETWORK_ERROR:
+                            if (usingRelay && relayTarget && allowDirectFallback && this.shouldFallbackToDirect(data)) {
+                                console.warn('Relay failed, trying direct stream fallback once');
+                                this.loadChannel(relayTarget, channel, {
+                                    allowHttpUpgrade: false,
+                                    forceDirect: true,
+                                    allowDirectFallback: false
+                                });
+                                return;
+                            }
                             if (classifiedError.blockRetry) {
                                 this.showLoading(false);
                                 this.showError(classifiedError.message);
@@ -916,7 +940,7 @@ class NetflixIPTVPlayer {
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
             // Safari native HLS support
             console.log('Using native HLS support');
-            video.src = streamUrl;
+            video.src = playbackUrl;
             video.addEventListener('loadedmetadata', () => {
                 if (loadToken !== this.channelLoadToken) return;
                 const playPromise = video.play();
@@ -954,6 +978,43 @@ class NetflixIPTVPlayer {
 
     upgradeToHttps(url = '') {
         return url.replace(/^http:\/\//i, 'https://');
+    }
+
+    async detectRelaySupport() {
+        try {
+            const healthUrl = `${this.relayEndpoint}/health`;
+            const response = await fetch(healthUrl, { cache: 'no-store' });
+            this.relayEnabled = response.ok;
+            console.log(`Relay status: ${this.relayEnabled ? 'enabled' : 'disabled'}`);
+        } catch (error) {
+            this.relayEnabled = false;
+            console.log('Relay status: disabled');
+        }
+    }
+
+    shouldRelayUrl(url, forceDirect = false) {
+        if (forceDirect || !this.relayEnabled) {
+            return false;
+        }
+        try {
+            const parsed = new URL(url);
+            return ['http:', 'https:'].includes(parsed.protocol) && parsed.origin !== window.location.origin;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    buildRelayUrl(url) {
+        return `${this.relayEndpoint}?url=${encodeURIComponent(url)}`;
+    }
+
+    shouldFallbackToDirect(data) {
+        const details = (data && data.details ? String(data.details) : '').toLowerCase();
+        const responseCode = data && data.response ? data.response.code : null;
+        return (
+            details.includes('manifestloaderror') &&
+            (responseCode === 404 || responseCode === 500 || responseCode === 502 || responseCode === 503 || responseCode === 504)
+        );
     }
 
     classifyPlaybackError(data, streamUrl, channel) {
