@@ -62,6 +62,9 @@ class StreamFlixHomepage {
             this.homePlaylistSelect.addEventListener('change', (e) => {
                 const nextPlaylist = e.target.value;
                 this.setPreferredPlaylist(nextPlaylist);
+                if (this.searchInput) {
+                    this.searchInput.value = '';
+                }
                 this.loadChannels({ forceRefresh: true });
             });
         }

@@ -158,6 +158,21 @@ button {
     color: #111;
 }
 
+.playlist-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.18rem 0.45rem;
+    border-radius: 999px;
+    background: rgba(229, 9, 20, 0.25);
+    border: 1px solid rgba(229, 9, 20, 0.55);
+    color: #ffe4e6;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
 .brand-logo {
     display: inline-flex;
     align-items: center;
@@ -1384,6 +1399,10 @@ video {
     }
 
     .playlist-toggle label {
+        display: none;
+    }
+
+    .playlist-badge {
         display: none;
     }
 

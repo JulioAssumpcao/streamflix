@@ -262,7 +262,7 @@ class NetflixIPTVPlayer {
             this.toggleNowPlayingBtn.addEventListener('click', () => this.toggleNowPlaying());
         }
         if (this.playlistSelect) {
-            this.playlistSelect.addEventListener('change', (e) => this.loadPlaylist(e.target.value));
+            this.playlistSelect.addEventListener('change', (e) => this.onPlaylistChange(e.target.value));
         }
         if (this.searchInput) {
             this.searchInput.addEventListener('input', (e) => this.filterChannels(e.target.value));
@@ -533,6 +533,14 @@ class NetflixIPTVPlayer {
             this.showLoading(false);
             this.showError(`Failed to load playlist: ${error.message}`);
         }
+    }
+
+    onPlaylistChange(type) {
+        if (this.sidebarSearch) {
+            this.sidebarSearch.value = '';
+        }
+        this.sidebarSearchTerm = '';
+        this.loadPlaylist(type);
     }
 
     resolveDefaultPlaylistType() {
