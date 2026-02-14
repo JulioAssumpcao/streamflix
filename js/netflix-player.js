@@ -20,6 +20,13 @@ class NetflixIPTVPlayer {
         this.controlsHideTimer = null;
         this.controlsHideDelay = 5000;
         this.maxNetworkRetries = 1;
+        this.channelStatusCacheKey = 'streamflix-channel-status-v1';
+        this.channelStatusTtlMs = 10 * 60 * 1000;
+        this.channelStatusCache = this.loadChannelStatusCache();
+        this.statusProbeQueue = [];
+        this.statusProbeInFlight = new Set();
+        this.statusProbeWorkers = 0;
+        this.maxStatusProbeWorkers = 3;
         this.relayEnabled = false;
         this.relayEndpoint = this.resolveRelayEndpoint();
         this.relayHealthEndpoint = this.resolveRelayHealthEndpoint(this.relayEndpoint);
@@ -368,8 +375,13 @@ class NetflixIPTVPlayer {
             const realIndex = this.channels.findIndex(c => c.id === channel.id);
             const isActive = this.currentChannelIndex === realIndex;
             const logo = channel.logo || '';
+            const status = this.getChannelStatus(channel.url);
+            const statusLabel = status === 'live' ? 'LIVE' : status === 'dead' ? 'DEAD' : '...';
+            const statusClass = status === 'live' ? 'status-live' : status === 'dead' ? 'status-dead' : 'status-checking';
+            const channelKey = encodeURIComponent(channel.url || '');
             const channelElement = document.createElement('div');
             channelElement.className = `channel-list-item ${isActive ? 'active' : ''}`;
+            channelElement.dataset.channelKey = channelKey;
             channelElement.innerHTML = `
                 <div class="channel-logo-small" style="background: ${this.getChannelColor(channel.group)}">
                     ${logo ? `<img src="${logo}" alt="${channel.name}" onerror="this.style.display='none'">` : 
@@ -379,6 +391,7 @@ class NetflixIPTVPlayer {
                     <h5>${channel.name}</h5>
                     <p>${channel.group}</p>
                 </div>
+                <span class="channel-live-badge ${statusClass}" data-channel-key="${channelKey}">${statusLabel}</span>
                 ${isActive ? '<div class="play-indicator"><i class="fas fa-play"></i></div>' : ''}
             `;
             
@@ -390,6 +403,7 @@ class NetflixIPTVPlayer {
         });
 
         this.updateSidebarLoadMoreButton();
+        this.queueVisibleChannelStatusChecks(visibleChannels);
     }
 
     getChannelColor(group) {
@@ -656,6 +670,7 @@ class NetflixIPTVPlayer {
             const channelElement = this.createChannelCard(channel, index);
             this.channelList.appendChild(channelElement);
         });
+        this.queueVisibleChannelStatusChecks(channels);
         
         console.log(`✅ Successfully rendered ${channels.length} channel cards`);
     }
@@ -666,6 +681,11 @@ class NetflixIPTVPlayer {
         card.dataset.channelId = channel.id;
         card.dataset.realIndex = this.channels.findIndex(c => c.id === channel.id);
         const fallbackInitial = channel.name ? channel.name.charAt(0).toUpperCase() : 'TV';
+        const status = this.getChannelStatus(channel.url);
+        const statusLabel = status === 'live' ? 'LIVE' : status === 'dead' ? 'DEAD' : '...';
+        const statusClass = status === 'live' ? 'status-live' : status === 'dead' ? 'status-dead' : 'status-checking';
+        const channelKey = encodeURIComponent(channel.url || '');
+        card.dataset.channelKey = channelKey;
 
         card.innerHTML = `
             <div class="channel-thumbnail">
@@ -673,11 +693,10 @@ class NetflixIPTVPlayer {
                     <i class="fas fa-tv"></i>
                     <span>${fallbackInitial}</span>
                 </div>
-                <div class="channel-logo-badge">
-                    ${channel.logo
-                        ? `<img src="${channel.logo}" alt="${channel.name} logo" onerror="this.parentElement.innerHTML='<span>${fallbackInitial}</span>'">`
-                        : `<span>${fallbackInitial}</span>`}
-                </div>
+                ${channel.logo
+                    ? `<img class="channel-thumb-img" src="${channel.logo}" alt="${channel.name} logo" onerror="this.style.display='none'">`
+                    : ''}
+                <span class="channel-live-badge ${statusClass}" data-channel-key="${channelKey}">${statusLabel}</span>
             </div>
             <div class="channel-info">
                 <div class="channel-name">${channel.name}</div>
@@ -1061,6 +1080,112 @@ class NetflixIPTVPlayer {
             this.relayEnabled = false;
             console.log(`Relay status: disabled (${this.relayEndpoint})`);
         }
+    }
+
+    loadChannelStatusCache() {
+        try {
+            const raw = localStorage.getItem(this.channelStatusCacheKey);
+            return raw ? JSON.parse(raw) : {};
+        } catch (error) {
+            return {};
+        }
+    }
+
+    saveChannelStatusCache() {
+        try {
+            localStorage.setItem(this.channelStatusCacheKey, JSON.stringify(this.channelStatusCache));
+        } catch (error) {
+            // Ignore storage errors.
+        }
+    }
+
+    getChannelStatus(url = '') {
+        const entry = this.channelStatusCache[url];
+        if (!entry) return 'checking';
+        if ((Date.now() - entry.checkedAt) > this.channelStatusTtlMs) return 'checking';
+        return entry.state === 'live' ? 'live' : 'dead';
+    }
+
+    queueVisibleChannelStatusChecks(channels = []) {
+        channels.forEach((channel) => {
+            if (!channel || !channel.url) return;
+            const cached = this.channelStatusCache[channel.url];
+            const fresh = cached && ((Date.now() - cached.checkedAt) <= this.channelStatusTtlMs);
+            if (fresh || this.statusProbeInFlight.has(channel.url)) return;
+            this.statusProbeInFlight.add(channel.url);
+            this.statusProbeQueue.push(channel.url);
+        });
+        this.runChannelStatusWorkers();
+    }
+
+    runChannelStatusWorkers() {
+        while (this.statusProbeWorkers < this.maxStatusProbeWorkers && this.statusProbeQueue.length > 0) {
+            const url = this.statusProbeQueue.shift();
+            this.statusProbeWorkers += 1;
+            this.probeChannelStatus(url)
+                .catch(() => this.setChannelStatus(url, 'dead'))
+                .finally(() => {
+                    this.statusProbeWorkers -= 1;
+                    this.statusProbeInFlight.delete(url);
+                    this.runChannelStatusWorkers();
+                });
+        }
+    }
+
+    async probeChannelStatus(url) {
+        const target = this.buildProbeUrl(url);
+        if (!target) {
+            this.setChannelStatus(url, 'dead');
+            return;
+        }
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort('timeout'), 6000);
+        try {
+            const response = await fetch(target, { cache: 'no-store', signal: controller.signal });
+            this.setChannelStatus(url, response.ok ? 'live' : 'dead');
+        } catch (error) {
+            this.setChannelStatus(url, 'dead');
+        } finally {
+            clearTimeout(timeout);
+        }
+    }
+
+    buildProbeUrl(url) {
+        if (!url) return null;
+        if (this.relayEnabled && this.isCrossOriginHttpUrl(url)) {
+            return this.buildRelayUrl(url);
+        }
+        if (window.location.protocol === 'https:' && /^http:\/\//i.test(url)) {
+            return null;
+        }
+        return url;
+    }
+
+    setChannelStatus(url, state) {
+        this.channelStatusCache[url] = {
+            state,
+            checkedAt: Date.now()
+        };
+        this.saveChannelStatusCache();
+        this.updateChannelStatusBadge(url, state);
+    }
+
+    updateChannelStatusBadge(url, state) {
+        const key = encodeURIComponent(url || '');
+        const badges = document.querySelectorAll(`.channel-live-badge[data-channel-key="${key}"]`);
+        badges.forEach((badge) => {
+            badge.classList.remove('status-live', 'status-dead', 'status-checking');
+            if (state === 'live') {
+                badge.classList.add('status-live');
+                badge.textContent = 'LIVE';
+            } else if (state === 'dead') {
+                badge.classList.add('status-dead');
+                badge.textContent = 'DEAD';
+            } else {
+                badge.classList.add('status-checking');
+                badge.textContent = '...';
+            }
+        });
     }
 
     isCrossOriginHttpUrl(url) {

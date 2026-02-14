@@ -8,6 +8,14 @@ class StreamFlixHomepage {
         this.allChannelsVisibleCount = 0;
         this.allChannelsPageSize = 0;
         this.allChannelsChunkSize = 50;
+        this.channelStatusCacheKey = 'streamflix-channel-status-v1';
+        this.channelStatusTtlMs = 10 * 60 * 1000;
+        this.channelStatusCache = this.loadChannelStatusCache();
+        this.statusProbeQueue = [];
+        this.statusProbeInFlight = new Set();
+        this.statusProbeWorkers = 0;
+        this.maxStatusProbeWorkers = 4;
+        this.relayProbeBase = this.resolveRelayProbeBase();
         this.playlists = {
             global: 'https://iptv-org.github.io/iptv/index.m3u',
             india: 'https://iptv-org.github.io/iptv/countries/in.m3u'
@@ -217,6 +225,7 @@ class StreamFlixHomepage {
         this.continueWatchingRow.innerHTML = this.continueWatching
             .map(channel => this.createChannelCard(channel, 'horizontal'))
             .join('');
+        this.queueVisibleChannelStatusChecks(this.continueWatching);
     }
 
     renderPopularChannels() {
@@ -225,6 +234,7 @@ class StreamFlixHomepage {
         this.popularChannelsRow.innerHTML = this.popularChannels
             .map(channel => this.createChannelCard(channel, 'horizontal'))
             .join('');
+        this.queueVisibleChannelStatusChecks(this.popularChannels);
     }
 
     renderAllChannels() {
@@ -258,6 +268,7 @@ class StreamFlixHomepage {
             .map(channel => this.createChannelCard(channel))
             .join('');
         this.updateHomeLoadMoreButton();
+        this.queueVisibleChannelStatusChecks(visibleChannels);
     }
 
     loadMoreAllChannels() {
@@ -280,19 +291,22 @@ class StreamFlixHomepage {
         const className = style === 'horizontal' ? 'channel-card-horizontal' : 'channel-card';
         const channelId = channel.id;
         const fallbackInitial = channel.name ? channel.name.charAt(0).toUpperCase() : 'TV';
+        const status = this.getChannelStatus(channel.url);
+        const statusLabel = status === 'live' ? 'LIVE' : status === 'dead' ? 'DEAD' : '...';
+        const statusClass = status === 'live' ? 'status-live' : status === 'dead' ? 'status-dead' : 'status-checking';
+        const channelKey = encodeURIComponent(channel.url || '');
         
         return `
-            <div class="${className}" data-channel-id="${channelId}">
+            <div class="${className}" data-channel-id="${channelId}" data-channel-key="${channelKey}">
                 <div class="channel-thumbnail">
                     <div class="channel-placeholder" style="background: ${this.getChannelColor(channel.group)}">
                         <i class="fas fa-tv"></i>
-                        <span>${channel.name.charAt(0)}</span>
+                        <span>${fallbackInitial}</span>
                     </div>
-                    <div class="channel-logo-badge">
-                        ${logo
-                            ? `<img src="${logo}" alt="${channel.name} logo" onerror="this.parentElement.innerHTML='<span>${fallbackInitial}</span>'">`
-                            : `<span>${fallbackInitial}</span>`}
-                    </div>
+                    ${logo
+                        ? `<img class="channel-thumb-img" src="${logo}" alt="${channel.name} logo" onerror="this.style.display='none'">`
+                        : ''}
+                    <span class="channel-live-badge ${statusClass}" data-channel-key="${channelKey}">${statusLabel}</span>
                     <div class="channel-overlay">
                         <button class="play-button" data-channel-id="${channelId}">
                             <i class="fas fa-play"></i>
@@ -436,6 +450,122 @@ class StreamFlixHomepage {
         setTimeout(() => {
             errorDiv.remove();
         }, 5000);
+    }
+
+    resolveRelayProbeBase() {
+        const fromWindow = typeof window !== 'undefined' ? (window.STREAMFLIX_RELAY_BASE || '').trim() : '';
+        const meta = document.querySelector('meta[name="streamflix-relay-base"]');
+        const fromMeta = meta ? (meta.content || '').trim() : '';
+        const raw = fromWindow || fromMeta || '';
+        return raw.replace(/\/+$/, '');
+    }
+
+    loadChannelStatusCache() {
+        try {
+            const raw = localStorage.getItem(this.channelStatusCacheKey);
+            return raw ? JSON.parse(raw) : {};
+        } catch (error) {
+            return {};
+        }
+    }
+
+    saveChannelStatusCache() {
+        try {
+            localStorage.setItem(this.channelStatusCacheKey, JSON.stringify(this.channelStatusCache));
+        } catch (error) {
+            // Ignore storage errors.
+        }
+    }
+
+    getChannelStatus(url = '') {
+        const entry = this.channelStatusCache[url];
+        if (!entry) return 'checking';
+        if ((Date.now() - entry.checkedAt) > this.channelStatusTtlMs) return 'checking';
+        return entry.state === 'live' ? 'live' : 'dead';
+    }
+
+    queueVisibleChannelStatusChecks(channels = []) {
+        channels.forEach((channel) => {
+            if (!channel || !channel.url) return;
+            const cached = this.channelStatusCache[channel.url];
+            const fresh = cached && ((Date.now() - cached.checkedAt) <= this.channelStatusTtlMs);
+            if (fresh || this.statusProbeInFlight.has(channel.url)) return;
+            this.statusProbeInFlight.add(channel.url);
+            this.statusProbeQueue.push(channel.url);
+        });
+        this.runChannelStatusWorkers();
+    }
+
+    runChannelStatusWorkers() {
+        while (this.statusProbeWorkers < this.maxStatusProbeWorkers && this.statusProbeQueue.length > 0) {
+            const url = this.statusProbeQueue.shift();
+            this.statusProbeWorkers += 1;
+            this.probeChannelStatus(url)
+                .catch(() => this.setChannelStatus(url, 'dead'))
+                .finally(() => {
+                    this.statusProbeWorkers -= 1;
+                    this.statusProbeInFlight.delete(url);
+                    this.runChannelStatusWorkers();
+                });
+        }
+    }
+
+    async probeChannelStatus(url) {
+        const target = this.buildProbeUrl(url);
+        if (!target) {
+            this.setChannelStatus(url, 'dead');
+            return;
+        }
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort('timeout'), 6000);
+        try {
+            const response = await fetch(target, { cache: 'no-store', signal: controller.signal });
+            this.setChannelStatus(url, response.ok ? 'live' : 'dead');
+        } catch (error) {
+            this.setChannelStatus(url, 'dead');
+        } finally {
+            clearTimeout(timeout);
+        }
+    }
+
+    buildProbeUrl(url) {
+        if (!url) return null;
+        if (this.relayProbeBase) {
+            const separator = this.relayProbeBase.includes('?') ? '&' : '?';
+            return `${this.relayProbeBase}${separator}url=${encodeURIComponent(url)}`;
+        }
+        if (window.location.protocol === 'https:' && /^http:\/\//i.test(url)) {
+            return null;
+        }
+        return url;
+    }
+
+    setChannelStatus(url, state) {
+        this.channelStatusCache[url] = {
+            state,
+            checkedAt: Date.now()
+        };
+        this.saveChannelStatusCache();
+        this.updateChannelStatusBadge(url, state);
+    }
+
+    updateChannelStatusBadge(url, state) {
+        const key = encodeURIComponent(url || '');
+        const badges = document.querySelectorAll(`.channel-live-badge[data-channel-key="${key}"]`);
+        badges.forEach((badge) => {
+            badge.classList.remove('status-live', 'status-dead', 'status-checking');
+            if (state === 'live') {
+                badge.classList.add('status-live');
+                badge.textContent = 'LIVE';
+            } else if (state === 'dead') {
+                badge.classList.add('status-dead');
+                badge.textContent = 'DEAD';
+            } else {
+                badge.classList.add('status-checking');
+                badge.textContent = '...';
+            }
+        });
     }
 
     setupSlideshow() {

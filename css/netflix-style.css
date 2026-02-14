@@ -413,6 +413,17 @@ button {
     object-fit: contain;
 }
 
+.channel-thumb-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #111;
+    padding: 0.55rem;
+    z-index: 1;
+}
+
 .channel-placeholder {
     position: absolute;
     inset: 0;
@@ -421,6 +432,7 @@ button {
     background: linear-gradient(145deg, #2f2f2f, #171717);
     color: #d3d3d3;
     font-size: 1.15rem;
+    z-index: 0;
 }
 
 .channel-placeholder i {
@@ -466,6 +478,44 @@ button {
     background: linear-gradient(to top, rgba(0, 0, 0, 0.84), rgba(0, 0, 0, 0));
     opacity: 0;
     transition: opacity var(--ease);
+    z-index: 3;
+}
+
+.channel-live-badge {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 42px;
+    height: 22px;
+    padding: 0 0.4rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    font-size: 0.63rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    z-index: 4;
+    background: rgba(20, 20, 20, 0.8);
+}
+
+.channel-live-badge.status-live {
+    background: rgba(16, 185, 129, 0.22);
+    border-color: rgba(16, 185, 129, 0.55);
+    color: #b7f7e2;
+}
+
+.channel-live-badge.status-dead {
+    background: rgba(239, 68, 68, 0.24);
+    border-color: rgba(239, 68, 68, 0.6);
+    color: #ffd0d0;
+}
+
+.channel-live-badge.status-checking {
+    background: rgba(148, 163, 184, 0.2);
+    border-color: rgba(148, 163, 184, 0.55);
+    color: #d8e4f2;
 }
 
 .channel-card:hover .channel-thumbnail .channel-overlay,
@@ -1136,6 +1186,14 @@ button {
 .channel-info-small {
     min-width: 0;
     flex: 1;
+}
+
+.channel-list-item .channel-live-badge {
+    position: static;
+    min-width: 40px;
+    height: 20px;
+    font-size: 0.58rem;
+    margin-left: auto;
 }
 
 .channel-info-small h5,
