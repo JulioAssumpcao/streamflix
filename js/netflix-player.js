@@ -19,6 +19,7 @@ class NetflixIPTVPlayer {
         this.isNowPlayingCollapsed = false;
         this.controlsHideTimer = null;
         this.controlsHideDelay = 5000;
+        this.maxNetworkRetries = 1;
         this.playlists = {
             india: 'https://iptv-org.github.io/iptv/countries/in.m3u',
             global: 'https://iptv-org.github.io/iptv/index.m3u'
@@ -106,7 +107,7 @@ class NetflixIPTVPlayer {
             this.updateChannelInfo(fallbackChannel);
             this.updateSidebarInfo(fallbackChannel);
             this.updateProgramPanel(fallbackChannel);
-            this.loadChannel(streamUrl);
+            this.loadChannel(streamUrl, fallbackChannel);
             this.pendingRequestedChannel = null;
         }
     }
@@ -686,7 +687,7 @@ class NetflixIPTVPlayer {
         
         // Load and play the channel
         this.currentChannelIndex = realIndex;
-        this.loadChannel(channel.url);
+        this.loadChannel(channel.url, channel);
     }
 
     updateActiveChannel(realIndex) {
@@ -808,12 +809,28 @@ class NetflixIPTVPlayer {
         }
     }
 
-    loadChannel(url) {
+    loadChannel(url, channel = null, options = {}) {
         console.log('Loading channel:', url);
         this.showLoading(true);
+
+        const { allowHttpUpgrade = true } = options;
+        let streamUrl = url;
+
+        if (this.isMixedContentUrl(streamUrl)) {
+            if (allowHttpUpgrade) {
+                const upgradedUrl = this.upgradeToHttps(streamUrl);
+                console.warn('HTTP stream on HTTPS page. Trying HTTPS fallback:', upgradedUrl);
+                streamUrl = upgradedUrl;
+            } else {
+                this.showLoading(false);
+                this.showError('This channel uses HTTP and is blocked on HTTPS. Try a secure (HTTPS) stream.');
+                return;
+            }
+        }
         
         const video = this.videoPlayer;
         const loadToken = ++this.channelLoadToken;
+        let networkRetries = 0;
 
         // Stop current playback before replacing source.
         video.pause();
@@ -833,7 +850,7 @@ class NetflixIPTVPlayer {
                 backBufferLength: 90
             });
             
-            hls.loadSource(url);
+            hls.loadSource(streamUrl);
             hls.attachMedia(video);
             
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -865,10 +882,22 @@ class NetflixIPTVPlayer {
             hls.on(Hls.Events.ERROR, (event, data) => {
                 if (data.fatal) {
                     console.error('Fatal HLS error:', data);
+                    const classifiedError = this.classifyPlaybackError(data, streamUrl, channel);
                     switch (data.type) {
                         case Hls.ErrorTypes.NETWORK_ERROR:
-                            console.log('Network error, retrying...');
-                            hls.startLoad();
+                            if (classifiedError.blockRetry) {
+                                this.showLoading(false);
+                                this.showError(classifiedError.message);
+                                break;
+                            }
+                            if (networkRetries < this.maxNetworkRetries) {
+                                networkRetries += 1;
+                                console.log(`Network error, retrying... (${networkRetries}/${this.maxNetworkRetries})`);
+                                hls.startLoad();
+                            } else {
+                                this.showLoading(false);
+                                this.showError(classifiedError.message);
+                            }
                             break;
                         case Hls.ErrorTypes.MEDIA_ERROR:
                             console.log('Media error, recovering...');
@@ -876,8 +905,7 @@ class NetflixIPTVPlayer {
                             break;
                         default:
                             this.showLoading(false);
-                            this.showError('Stream failed to load');
-                            setTimeout(() => this.nextChannel(), 2000);
+                            this.showError(classifiedError.message);
                             break;
                     }
                 }
@@ -888,7 +916,7 @@ class NetflixIPTVPlayer {
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
             // Safari native HLS support
             console.log('Using native HLS support');
-            video.src = url;
+            video.src = streamUrl;
             video.addEventListener('loadedmetadata', () => {
                 if (loadToken !== this.channelLoadToken) return;
                 const playPromise = video.play();
@@ -918,6 +946,54 @@ class NetflixIPTVPlayer {
             this.showLoading(false);
             this.showError('HLS streams not supported in this browser');
         }
+    }
+
+    isMixedContentUrl(url) {
+        return window.location.protocol === 'https:' && /^http:\/\//i.test(url || '');
+    }
+
+    upgradeToHttps(url = '') {
+        return url.replace(/^http:\/\//i, 'https://');
+    }
+
+    classifyPlaybackError(data, streamUrl, channel) {
+        const channelName = channel && channel.name ? channel.name : 'This channel';
+        const details = (data && data.details ? String(data.details) : '').toLowerCase();
+        const responseCode = data && data.response ? data.response.code : null;
+        const isCrossOrigin = (() => {
+            try {
+                return new URL(streamUrl).origin !== window.location.origin;
+            } catch (error) {
+                return true;
+            }
+        })();
+
+        if (this.isMixedContentUrl(streamUrl)) {
+            return {
+                blockRetry: true,
+                message: `${channelName} is HTTP-only and blocked on HTTPS pages.`
+            };
+        }
+
+        // Cross-origin manifest load failures with status 0 are commonly CORS blocks.
+        if (details.includes('manifestloaderror') && isCrossOrigin && (responseCode === 0 || responseCode === null)) {
+            return {
+                blockRetry: true,
+                message: `${channelName} is blocked by CORS or geo restrictions in web browsers (may still work in VLC).`
+            };
+        }
+
+        if (details.includes('manifestloadtimeout')) {
+            return {
+                blockRetry: false,
+                message: `${channelName} timed out while loading. Try again or choose another channel.`
+            };
+        }
+
+        return {
+            blockRetry: false,
+            message: `${channelName} failed to load. Stream may be offline, geo-blocked, or browser-restricted.`
+        };
     }
 
     togglePlayPause() {
