@@ -39,21 +39,12 @@ export default {
     const timeoutId = setTimeout(() => controller.abort('timeout'), timeoutMs);
 
     try {
-      const upstreamHeaders = new Headers({
-        'user-agent': 'StreamFlixRelay/1.0',
-        'accept': '*/*'
-      });
       const range = request.headers.get('range');
-      if (range) {
-        upstreamHeaders.set('range', range);
+      let upstreamRes = await fetchUpstream(request, upstreamUrl, controller.signal, range, true);
+      // Some origins reject specific headers/fingerprints. Retry once with relaxed headers.
+      if ((upstreamRes.status === 401 || upstreamRes.status === 403) && !range) {
+        upstreamRes = await fetchUpstream(request, upstreamUrl, controller.signal, range, false);
       }
-
-      const upstreamRes = await fetch(upstreamUrl.toString(), {
-        method: 'GET',
-        headers: upstreamHeaders,
-        redirect: 'follow',
-        signal: controller.signal
-      });
 
       const contentType = (upstreamRes.headers.get('content-type') || '').toLowerCase();
       const isPlaylist = isPlaylistResponse(upstreamUrl.pathname, contentType);
@@ -65,7 +56,8 @@ export default {
           status: upstreamRes.status,
           headers: mergeHeaders({
             'content-type': 'application/vnd.apple.mpegurl; charset=utf-8',
-            'cache-control': 'no-store, max-age=0'
+            'cache-control': 'no-store, max-age=0',
+            'x-relay-upstream-status': String(upstreamRes.status)
           })
         });
       }
@@ -81,6 +73,7 @@ export default {
       if (passRanges) passthroughHeaders['accept-ranges'] = passRanges;
       const passRange = upstreamRes.headers.get('content-range');
       if (passRange) passthroughHeaders['content-range'] = passRange;
+      passthroughHeaders['x-relay-upstream-status'] = String(upstreamRes.status);
 
       return new Response(upstreamRes.body, {
         status: upstreamRes.status,
@@ -106,6 +99,32 @@ function isPlaylistResponse(pathname = '', contentType = '') {
     contentType.includes('audio/mpegurl') ||
     contentType.includes('audio/x-mpegurl')
   );
+}
+
+async function fetchUpstream(request, upstreamUrl, signal, range, strictMode) {
+  const fallbackUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36';
+  const incomingUA = request.headers.get('user-agent') || fallbackUA;
+  const headers = new Headers({
+    'accept': '*/*',
+    'accept-language': request.headers.get('accept-language') || 'en-US,en;q=0.9',
+    'cache-control': 'no-cache',
+    'pragma': 'no-cache',
+    'user-agent': incomingUA
+  });
+  if (range) {
+    headers.set('range', range);
+  }
+  if (strictMode) {
+    headers.set('origin', upstreamUrl.origin);
+    headers.set('referer', `${upstreamUrl.origin}/`);
+  }
+
+  return fetch(upstreamUrl.toString(), {
+    method: 'GET',
+    headers,
+    redirect: 'follow',
+    signal
+  });
 }
 
 function rewritePlaylist(text, baseUrl, relayOrigin) {

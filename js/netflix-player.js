@@ -1089,6 +1089,13 @@ class NetflixIPTVPlayer {
             };
         }
 
+        if (details.includes('manifestloaderror') && (responseCode === 401 || responseCode === 403)) {
+            return {
+                blockRetry: true,
+                message: `${channelName} was denied by upstream server (401/403). This source likely blocks relay datacenter traffic.`
+            };
+        }
+
         if (details.includes('manifestloadtimeout')) {
             return {
                 blockRetry: false,
