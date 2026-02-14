@@ -823,8 +823,17 @@ class NetflixIPTVPlayer {
             allowDirectFallback = true
         } = options;
         let streamUrl = url;
+        const relayRequired = this.requiresRelay(streamUrl);
+        const canUseRelay = this.relayEnabled;
 
-        if (this.isMixedContentUrl(streamUrl)) {
+        if (relayRequired && !canUseRelay) {
+            this.showLoading(false);
+            this.showError('Relay is required for this channel on HTTPS. Relay is unavailable right now.');
+            return;
+        }
+
+        // Only attempt http->https direct upgrade if relay is not being used.
+        if (this.isMixedContentUrl(streamUrl) && !canUseRelay) {
             if (allowHttpUpgrade) {
                 const upgradedUrl = this.upgradeToHttps(streamUrl);
                 console.warn('HTTP stream on HTTPS page. Trying HTTPS fallback:', upgradedUrl);
@@ -837,7 +846,6 @@ class NetflixIPTVPlayer {
         }
 
         const usingRelay = this.shouldRelayUrl(streamUrl, forceDirect);
-        const relayRequired = this.requiresRelay(streamUrl);
         if (relayRequired && !usingRelay) {
             this.showLoading(false);
             this.showError('Relay is required for this channel on HTTPS. Configure and enable relay, then try again.');
@@ -997,7 +1005,9 @@ class NetflixIPTVPlayer {
                 return '';
             }
         })();
-        const raw = fromWindow || fromMeta || '/api/relay';
+        const isPages = typeof window !== 'undefined' && /pages\.dev$/i.test(window.location.hostname);
+        const cloudflareDefault = 'https://streamflix-relay.chrizmonsaji.workers.dev';
+        const raw = fromWindow || fromMeta || (isPages ? cloudflareDefault : '/api/relay');
         return raw.replace(/\/+$/, '');
     }
 
@@ -1038,7 +1048,7 @@ class NetflixIPTVPlayer {
             return false;
         }
         if (this.requiresRelay(url)) {
-            return true;
+            return this.relayEnabled;
         }
         return this.relayEnabled && this.isCrossOriginHttpUrl(url);
     }
