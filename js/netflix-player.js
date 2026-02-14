@@ -21,7 +21,8 @@ class NetflixIPTVPlayer {
         this.controlsHideDelay = 5000;
         this.maxNetworkRetries = 1;
         this.relayEnabled = false;
-        this.relayEndpoint = '/api/relay';
+        this.relayEndpoint = this.resolveRelayEndpoint();
+        this.relayHealthEndpoint = this.resolveRelayHealthEndpoint(this.relayEndpoint);
         this.playlists = {
             india: 'https://iptv-org.github.io/iptv/countries/in.m3u',
             global: 'https://iptv-org.github.io/iptv/index.m3u'
@@ -836,6 +837,12 @@ class NetflixIPTVPlayer {
         }
 
         const usingRelay = this.shouldRelayUrl(streamUrl, forceDirect);
+        const relayRequired = this.requiresRelay(streamUrl);
+        if (relayRequired && !usingRelay) {
+            this.showLoading(false);
+            this.showError('Relay is required for this channel on HTTPS. Configure and enable relay, then try again.');
+            return;
+        }
         const relayTarget = usingRelay ? streamUrl : null;
         const playbackUrl = usingRelay ? this.buildRelayUrl(streamUrl) : streamUrl;
 
@@ -900,7 +907,7 @@ class NetflixIPTVPlayer {
                     const classifiedError = this.classifyPlaybackError(data, streamUrl, channel);
                     switch (data.type) {
                         case Hls.ErrorTypes.NETWORK_ERROR:
-                            if (usingRelay && relayTarget && allowDirectFallback && this.shouldFallbackToDirect(data)) {
+                            if (usingRelay && relayTarget && allowDirectFallback && !relayRequired && this.shouldFallbackToDirect(data)) {
                                 console.warn('Relay failed, trying direct stream fallback once');
                                 this.loadChannel(relayTarget, channel, {
                                     allowHttpUpgrade: false,
@@ -980,22 +987,39 @@ class NetflixIPTVPlayer {
         return url.replace(/^http:\/\//i, 'https://');
     }
 
+    resolveRelayEndpoint() {
+        const fromWindow = typeof window !== 'undefined' ? (window.STREAMFLIX_RELAY_BASE || '').trim() : '';
+        const fromMeta = (() => {
+            try {
+                const meta = document.querySelector('meta[name="streamflix-relay-base"]');
+                return meta ? (meta.content || '').trim() : '';
+            } catch (error) {
+                return '';
+            }
+        })();
+        const raw = fromWindow || fromMeta || '/api/relay';
+        return raw.replace(/\/+$/, '');
+    }
+
+    resolveRelayHealthEndpoint(endpoint) {
+        if (endpoint === '/api/relay') {
+            return '/api/relay/health';
+        }
+        return `${endpoint}/health`;
+    }
+
     async detectRelaySupport() {
         try {
-            const healthUrl = `${this.relayEndpoint}/health`;
-            const response = await fetch(healthUrl, { cache: 'no-store' });
+            const response = await fetch(this.relayHealthEndpoint, { cache: 'no-store' });
             this.relayEnabled = response.ok;
-            console.log(`Relay status: ${this.relayEnabled ? 'enabled' : 'disabled'}`);
+            console.log(`Relay status: ${this.relayEnabled ? 'enabled' : 'disabled'} (${this.relayEndpoint})`);
         } catch (error) {
             this.relayEnabled = false;
-            console.log('Relay status: disabled');
+            console.log(`Relay status: disabled (${this.relayEndpoint})`);
         }
     }
 
-    shouldRelayUrl(url, forceDirect = false) {
-        if (forceDirect || !this.relayEnabled) {
-            return false;
-        }
+    isCrossOriginHttpUrl(url) {
         try {
             const parsed = new URL(url);
             return ['http:', 'https:'].includes(parsed.protocol) && parsed.origin !== window.location.origin;
@@ -1004,8 +1028,24 @@ class NetflixIPTVPlayer {
         }
     }
 
+    requiresRelay(url) {
+        if (window.location.protocol !== 'https:') return false;
+        return this.isCrossOriginHttpUrl(url);
+    }
+
+    shouldRelayUrl(url, forceDirect = false) {
+        if (forceDirect) {
+            return false;
+        }
+        if (this.requiresRelay(url)) {
+            return true;
+        }
+        return this.relayEnabled && this.isCrossOriginHttpUrl(url);
+    }
+
     buildRelayUrl(url) {
-        return `${this.relayEndpoint}?url=${encodeURIComponent(url)}`;
+        const separator = this.relayEndpoint.includes('?') ? '&' : '?';
+        return `${this.relayEndpoint}${separator}url=${encodeURIComponent(url)}`;
     }
 
     shouldFallbackToDirect(data) {

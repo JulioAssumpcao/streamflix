@@ -55,6 +55,7 @@ A modern, Netflix-inspired web-based IPTV player that streams live TV channels f
 - **Manifest Rewriting**: Relay rewrites nested HLS URLs so all segment/key requests stay routed through your server.
 - **CORS + HTTPS Friendly**: Enables web playback for many channels that fail in browser direct mode.
 - **Smart Player Integration**: Frontend auto-detects relay (`/api/relay/health`) and uses it when available.
+- **Cloudflare Worker Starter**: Added `worker/` with Worker relay template (`worker/src/index.js`) and `worker/wrangler.toml`.
 
 ## ✨ Previous Updates (v2.1)
 
@@ -170,6 +171,19 @@ npm run dev
 # Visit: http://localhost:8080
 ```
 
+### ☁️ Cloudflare Worker Relay (Production)
+1. Deploy the Worker in `worker/`:
+```bash
+cd worker
+npx wrangler deploy
+```
+2. Bind a custom domain (recommended): `relay.yourdomain.com`.
+3. Update relay base in app HTML:
+   - `index.html` meta `streamflix-relay-base`
+   - `player.html` meta `streamflix-relay-base`
+   Example value: `https://relay.yourdomain.com`
+   Current deployed worker: `https://streamflix-relay.chrizmonsaji.workers.dev`
+
 ## 🎯 Usage
 
 ### Basic Operations
@@ -213,6 +227,9 @@ streamflix/
 │   ├── homepage.js           # Homepage data/render logic + navigation
 │   ├── netflix-player.js     # Core player logic (HLS.js, sidebar, controls)
 │   └── pwa-register.js       # Service worker registration
+├── worker/                   # Cloudflare Worker relay template
+│   ├── wrangler.toml
+│   └── src/index.js
 ├── assets/                   # App icons (favicon + Android/iOS install icons)
 ├── manifest.webmanifest      # PWA manifest
 ├── sw.js                     # Service worker (app shell cache)
