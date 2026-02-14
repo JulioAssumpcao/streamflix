@@ -825,15 +825,16 @@ class NetflixIPTVPlayer {
         let streamUrl = url;
         const relayRequired = this.requiresRelay(streamUrl);
         const canUseRelay = this.relayEnabled;
+        const usingRelay = this.shouldRelayUrl(streamUrl, forceDirect);
 
-        if (relayRequired && !canUseRelay) {
+        if (relayRequired && !usingRelay) {
             this.showLoading(false);
             this.showError('Relay is required for this channel on HTTPS. Relay is unavailable right now.');
             return;
         }
 
-        // Only attempt http->https direct upgrade if relay is not being used.
-        if (this.isMixedContentUrl(streamUrl) && !canUseRelay) {
+        // Only attempt http->https direct upgrade for direct playback path.
+        if (!usingRelay && this.isMixedContentUrl(streamUrl) && !canUseRelay) {
             if (allowHttpUpgrade) {
                 const upgradedUrl = this.upgradeToHttps(streamUrl);
                 console.warn('HTTP stream on HTTPS page. Trying HTTPS fallback:', upgradedUrl);
@@ -845,13 +846,7 @@ class NetflixIPTVPlayer {
             }
         }
 
-        const usingRelay = this.shouldRelayUrl(streamUrl, forceDirect);
-        if (relayRequired && !usingRelay) {
-            this.showLoading(false);
-            this.showError('Relay is required for this channel on HTTPS. Configure and enable relay, then try again.');
-            return;
-        }
-        const relayTarget = usingRelay ? streamUrl : null;
+        const relayTarget = usingRelay ? url : null;
         const playbackUrl = usingRelay ? this.buildRelayUrl(streamUrl) : streamUrl;
 
         if (usingRelay) {
