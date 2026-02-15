@@ -1156,7 +1156,7 @@ class NetflixIPTVPlayer {
 
     buildProbeUrl(url) {
         if (!url) return null;
-        if (this.relayEnabled && this.isCrossOriginHttpUrl(url)) {
+        if (this.relayEnabled && this.isHttpStreamUrl(url)) {
             return this.buildRelayUrl(url);
         }
         if (window.location.protocol === 'https:' && /^http:\/\//i.test(url)) {
@@ -1201,19 +1201,29 @@ class NetflixIPTVPlayer {
         }
     }
 
+    isHttpStreamUrl(url) {
+        if (!url) return false;
+        try {
+            const parsed = new URL(url);
+            return ['http:', 'https:'].includes(parsed.protocol);
+        } catch (error) {
+            return false;
+        }
+    }
+
     requiresRelay(url) {
         if (window.location.protocol !== 'https:') return false;
-        return this.isCrossOriginHttpUrl(url);
+        return /^http:\/\//i.test(url || '');
     }
 
     shouldRelayUrl(url, forceDirect = false) {
         if (forceDirect) {
             return false;
         }
-        if (this.requiresRelay(url)) {
-            return this.relayEnabled;
+        if (!this.relayEnabled) {
+            return false;
         }
-        return this.relayEnabled && this.isCrossOriginHttpUrl(url);
+        return this.isHttpStreamUrl(url);
     }
 
     buildRelayUrl(url) {
