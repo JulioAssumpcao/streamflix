@@ -15,7 +15,8 @@
     "express": "^4.21.2"
   },
   "devDependencies": {
-    "electron": "^33.2.1"
+    "electron": "^40.4.1",
+    "electron-builder": "^26.7.0"
   },
   "build": {
     "appId": "com.streamflix.desktop",
