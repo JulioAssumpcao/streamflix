@@ -3,10 +3,6 @@
   "version": "2.3.0",
   "description": "Netflix-style IPTV player with backend relay support for browser-safe streaming",
   "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
-  },
   "keywords": [
     "iptv",
     "streaming",
@@ -18,6 +14,44 @@
   "dependencies": {
     "express": "^4.21.2"
   },
+  "devDependencies": {
+    "electron": "^33.2.1"
+  },
+  "build": {
+    "appId": "com.streamflix.desktop",
+    "files": [
+      "desktop/**/*",
+      "lib/**/*",
+      "index.html",
+      "player.html",
+      "js/**/*",
+      "css/**/*",
+      "assets/**/*",
+      "README.md",
+      "package.json"
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    }
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "desktop": "electron desktop/main.js",
+    "desktop:dev": "electron desktop/main.js",
+    "dist": "electron-builder"
+  },
   "author": "Chris",
-  "license": "MIT"
+  "license": "MIT",
+  "directories": {
+    "lib": "lib"
+  }
 }

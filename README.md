@@ -171,6 +171,24 @@ npm run dev
 # Visit: http://localhost:8080
 ```
 
+### 🖥️ Desktop App (Electron)
+
+StreamFlix can run as a native desktop app on Windows/Linux/macOS using Electron.
+The app starts a local internal relay server automatically and loads the same StreamFlix UI from localhost.
+
+```bash
+# Install dependencies (includes Electron)
+npm install
+
+# Launch desktop app
+npm run desktop
+```
+
+Desktop behavior:
+- Starts local server on `127.0.0.1` with dynamic port
+- Uses local relay (`/api/relay`) for channel playback
+- Avoids browser mixed-content and cross-origin restrictions that affect normal web hosting
+
 ### ☁️ Cloudflare Worker Relay (Production)
 1. Deploy the Worker in `worker/`:
 ```bash
