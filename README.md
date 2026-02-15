@@ -6,7 +6,7 @@
 
 A modern, Netflix-inspired web-based IPTV player that streams live TV channels from M3U playlists with a premium user experience. Built with vanilla JavaScript and HLS.js for seamless HLS streaming support.
 
-## ✨ Latest Updates (v2.2)
+## ✨ Latest Updates (v2.3)
 
 ### 🚀 New Features, Fixes, and UX Improvements
 
@@ -50,12 +50,12 @@ A modern, Netflix-inspired web-based IPTV player that streams live TV channels f
 - **Service Worker**: Added `sw.js` for app-shell caching and offline-friendly static asset loading.
 - **Auto Registration**: Added `js/pwa-register.js` and wired it to homepage/player.
 
-#### **Backend Relay (New)**
-- **Browser-Safe Stream Relay**: Added `server.js` with `/api/relay` to proxy upstream HLS playlists/segments.
-- **Manifest Rewriting**: Relay rewrites nested HLS URLs so all segment/key requests stay routed through your server.
-- **CORS + HTTPS Friendly**: Enables web playback for many channels that fail in browser direct mode.
-- **Smart Player Integration**: Frontend auto-detects relay (`/api/relay/health`) and uses it when available.
-- **Cloudflare Worker Starter**: Added `worker/` with Worker relay template (`worker/src/index.js`) and `worker/wrangler.toml`.
+#### **Backend Relay & Desktop Deployment**
+- **Browser-Safe Stream Relay**: The Electron desktop app now bundles `lib/streamflix-app.js` and starts an Express relay at `http://127.0.0.1:<port>/api/relay` before loading the UI so every stream goes through localhost.
+- **Manifest Rewriting**: The relay rewrites nested HLS URLs (segments/keys) so the browser always requests proxied endpoints, preventing CORS/mixed-content failures.
+- **CORS + HTTPS Friendly**: Enables streaming of HTTP/HTTPS playlists inside the Electron UI and the hosted web build without browser blocking.
+- **Smart Player Integration**: Frontend auto-detects `/api/relay/health` and prefers relay playback for all HTTP/HTTPS URLs (including status probes and `playSpecificChannelById`).
+- **Cloudflare Worker Starter**: `worker/` contains a Cloudflare Worker relay template (`worker/src/index.js`) and `worker/wrangler.toml` in case you need a global edge relay.
 
 ## ✨ Previous Updates (v2.1)
 
@@ -182,6 +182,16 @@ npm install
 
 # Launch desktop app
 npm run desktop
+```
+
+**Create distributables**
+
+```bash
+# Build Linux packages (.AppImage + .deb)
+npm run dist
+
+# Build Windows NSIS installer (requires Wine + working network)
+npm run dist -- --win
 ```
 
 Desktop behavior:
@@ -438,6 +448,13 @@ Upload these files to any static hosting:
 - `_routes.json` (for Cloudflare routing)
 
 ## 📊 Changelog
+
+### Version 2.3 (February 2026) - Current
+- ✅ **Native Relay Desktop Build** – The Electron bundle now launches `lib/streamflix-app.js`, proxies every upstream stream through `http://127.0.0.1:<port>/api/relay`, and rewrites nested HLS URLs so the renderer only talks to localhost.
+- ✅ **Windows Installer** – `npm run dist -- --win` produces `streamflix Setup 2.3.0.exe` (NSIS installer) on top of the Linux `.AppImage`/`.deb` artifacts.
+- ✅ **Branded Icons** – Added high-resolution StreamFlix icons so the Linux/Windows packages carry the new visual identity.
+- ✅ **Playlist/Relay Sync** – The homepage & player share metadata (`channel`, `stream`, `logo`) and the player uses the relay for status probes to ensure deterministic playback across both web and desktop.
+- ✅ **Platform Notes** – Shipping the existing web UI via a localhost relay mimics VLC-like streaming while avoiding CORS/mixed-content limitations.
 
 ### Version 2.1 (February 2026) - Current
 - ✅ **Fixed JavaScript Syntax Error** - Channels now load properly
