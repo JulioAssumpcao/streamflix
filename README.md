@@ -57,6 +57,12 @@ A modern, Netflix-inspired web-based IPTV player that streams live TV channels f
 - **Smart Player Integration**: Frontend auto-detects `/api/relay/health` and prefers relay playback for all HTTP/HTTPS URLs (including status probes and `playSpecificChannelById`).
 - **Cloudflare Worker Starter**: `worker/` contains a Cloudflare Worker relay template (`worker/src/index.js`) and `worker/wrangler.toml` in case you need a global edge relay.
 
+#### **Downloads & Releases**
+- **Dedicated Download Page**: Added `download.html` with platform cards, install steps, and release metadata.
+- **Windows + Linux Artifacts**: GitHub release `v2.3.0` ships both `streamflix.Setup.2.3.0.exe` and `streamflix_2.3.0_amd64.deb`.
+- **Homepage Navigation Update**: Added homepage menu/sidebar navigation entry to open the Downloads page directly.
+- **Android APK Status**: Added Android APK section as **Coming Soon** with planned packaging notes.
+
 ## ✨ Previous Updates (v2.1)
 
 ### 🎉 Major Fixes & Improvements
@@ -95,7 +101,7 @@ A modern, Netflix-inspired web-based IPTV player that streams live TV channels f
 - **Adaptive Button Sizing**: Larger play button (65px) on mobile
 - **Smart Feature Hiding**: Theater mode hidden on small screens
 - **Device Detection**: Automatic mobile initialization
-- **Comprehensive Documentation**: See MOBILE_GUIDE.md
+- **Comprehensive Mobile Pass**: Added dedicated mobile UX tuning and troubleshooting guidance
 
 #### **Developer Improvements** 🛠️
 - **Fixed Syntax Error**: Resolved class method positioning bug
@@ -239,7 +245,7 @@ npx wrangler deploy
 - **3-row stacked layout** - progress, playback, settings
 - **Larger play button** (65px) for easy access
 - **Responsive grid** adapts to screen size
-- See **MOBILE_GUIDE.md** for complete mobile documentation
+- Install as a PWA from mobile browser while Android APK is in progress
 
 ## 📁 Project Structure
 
@@ -248,6 +254,7 @@ streamflix/
 ├── index.html                # Homepage (hero, rows, search, channel grid)
 ├── player.html               # Dedicated player page (video + sidebar)
 ├── splash-preview.html       # Isolated splash screen preview
+├── download.html             # Download center for desktop installers + APK status
 ├── test-channels.html        # Debugging tool for playlist testing
 ├── css/
 │   └── netflix-style.css     # Unified Netflix-style UI + responsive system
@@ -261,7 +268,6 @@ streamflix/
 ├── assets/                   # App icons (favicon + Android/iOS install icons)
 ├── manifest.webmanifest      # PWA manifest
 ├── sw.js                     # Service worker (app shell cache)
-├── MOBILE_GUIDE.md           # Comprehensive mobile usage guide
 ├── 404.html                  # Error page
 ├── _routes.json              # Cloudflare routing config
 ├── package.json              # Project metadata
@@ -394,7 +400,7 @@ const hls = new Hls({
    - Close other streaming applications
    - Try different network connection
    - Controls are persistent on mobile
-   - Refer to MOBILE_GUIDE.md for troubleshooting
+   - Check latest release notes and known issues section for mobile-specific guidance
 
 #### 6. **Channels Not Loading / Syntax Errors**
    ✅ **Fixed in v2.1!** JavaScript syntax error resolved
@@ -455,6 +461,8 @@ Upload these files to any static hosting:
 - ✅ **Branded Icons** – Added high-resolution StreamFlix icons so the Linux/Windows packages carry the new visual identity.
 - ✅ **Playlist/Relay Sync** – The homepage & player share metadata (`channel`, `stream`, `logo`) and the player uses the relay for status probes to ensure deterministic playback across both web and desktop.
 - ✅ **Platform Notes** – Shipping the existing web UI via a localhost relay mimics VLC-like streaming while avoiding CORS/mixed-content limitations.
+- ✅ **Download Center** – Added `download.html` with direct Windows/Linux release links and installation instructions.
+- ✅ **Android Coming Soon** – Added Android APK placeholder/status block and roadmap notes in the download center.
 
 ### Version 2.1 (February 2026) - Current
 - ✅ **Fixed JavaScript Syntax Error** - Channels now load properly
@@ -464,7 +472,7 @@ Upload these files to any static hosting:
 - ✅ **Tap-to-Play** - Direct video tapping on mobile
 - ✅ **Keyboard Shortcuts** - F/T/P keys for view modes
 - ✅ **Debug Logging** - Comprehensive console logs with emojis
-- ✅ **Mobile Guide** - Created MOBILE_GUIDE.md documentation
+- ✅ **Mobile Guide** - Completed mobile-focused documentation and optimization pass
 - ✅ **Test Tools** - Added test-channels.html for debugging
 - ✅ **Live Deployment** - Published to Cloudflare Pages
 - 🔧 **Code Cleanup** - Fixed class method positioning bug
@@ -529,14 +537,15 @@ Found a bug or have a feature request?
 - 🐛 **Open an issue** on [GitHub Issues](https://github.com/chriz-3656/streamflix/issues)
 - 📖 **Check existing issues** before creating new ones
 - 🔍 **Provide browser console logs** (F12) for bug reports
-- 📱 **Mobile issues**: See MOBILE_GUIDE.md troubleshooting first
+- 📱 **Mobile issues**: include device model + browser version in bug report
 - 🧪 **Use test-channels.html** for debugging playlist loading
 
 ## 🔗 Links
 
 - 🌐 **Live Demo**: [https://streamflix-watch.pages.dev/](https://streamflix-watch.pages.dev/)
 - 💻 **GitHub Repository**: [https://github.com/chriz-3656/streamflix](https://github.com/chriz-3656/streamflix)
-- 📱 **Mobile Guide**: [MOBILE_GUIDE.md](MOBILE_GUIDE.md)
+- ⬇️ **Download Page**: [https://streamflix-watch.pages.dev/download.html](https://streamflix-watch.pages.dev/download.html)
+- 🏷️ **Latest Release**: [https://github.com/chriz-3656/streamflix/releases/tag/v2.3.0](https://github.com/chriz-3656/streamflix/releases/tag/v2.3.0)
 - 🔬 **Test Tool**: [test-channels.html](test-channels.html)
 - 🎬 **Splash Preview**: [splash-preview.html](splash-preview.html)
 
