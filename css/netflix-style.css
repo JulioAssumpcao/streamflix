@@ -392,6 +392,24 @@ body.home-sidebar-open {
     background: #c80812;
 }
 
+.download-btn.disabled,
+.download-btn:disabled {
+    background: #3a3a3a;
+    color: #b9b9b9;
+    cursor: not-allowed;
+    border: 1px solid #4d4d4d;
+}
+
+.download-btn.disabled:hover,
+.download-btn:disabled:hover {
+    background: #3a3a3a;
+}
+
+.coming-soon-card {
+    border-style: dashed;
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
 .download-details {
     margin-top: 1rem;
     display: grid;
