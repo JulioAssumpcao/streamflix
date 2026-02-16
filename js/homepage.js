@@ -39,6 +39,10 @@ class StreamFlixHomepage {
         this.popularChannelsRow = document.getElementById('popular-channels');
         this.categoryCards = document.querySelectorAll('.category-card');
         this.homePlaylistSelect = document.getElementById('home-playlist-select');
+        this.homeMenuToggle = document.getElementById('home-menu-toggle');
+        this.homeSidebar = document.getElementById('home-sidebar');
+        this.homeSidebarOverlay = document.getElementById('home-sidebar-overlay');
+        this.homeSidebarClose = document.getElementById('home-sidebar-close');
 
         if (this.homePlaylistSelect) {
             this.homePlaylistSelect.value = this.selectedPlaylist;
@@ -74,6 +78,24 @@ class StreamFlixHomepage {
                     this.searchInput.value = '';
                 }
                 this.loadChannels({ forceRefresh: true });
+            });
+        }
+
+        if (this.homeMenuToggle) {
+            this.homeMenuToggle.addEventListener('click', () => this.openHomeSidebar());
+        }
+
+        if (this.homeSidebarClose) {
+            this.homeSidebarClose.addEventListener('click', () => this.closeHomeSidebar());
+        }
+
+        if (this.homeSidebarOverlay) {
+            this.homeSidebarOverlay.addEventListener('click', () => this.closeHomeSidebar());
+        }
+
+        if (this.homeSidebar) {
+            this.homeSidebar.querySelectorAll('a').forEach((link) => {
+                link.addEventListener('click', () => this.closeHomeSidebar());
             });
         }
         
@@ -571,6 +593,20 @@ class StreamFlixHomepage {
     setupSlideshow() {
         // Could implement automatic slideshow rotation here
         console.log('Slideshow initialized');
+    }
+
+    openHomeSidebar() {
+        if (!this.homeSidebar || !this.homeSidebarOverlay) return;
+        this.homeSidebar.classList.add('open');
+        this.homeSidebarOverlay.classList.add('visible');
+        document.body.classList.add('home-sidebar-open');
+    }
+
+    closeHomeSidebar() {
+        if (!this.homeSidebar || !this.homeSidebarOverlay) return;
+        this.homeSidebar.classList.remove('open');
+        this.homeSidebarOverlay.classList.remove('visible');
+        document.body.classList.remove('home-sidebar-open');
     }
 }
 

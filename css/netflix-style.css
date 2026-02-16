@@ -214,6 +214,208 @@ button {
     background: rgba(255, 255, 255, 0.2);
 }
 
+.nav-icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--ease), transform var(--ease);
+}
+
+.nav-icon-btn:hover {
+    background: rgba(255, 255, 255, 0.22);
+    transform: translateY(-1px);
+}
+
+.home-sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    opacity: 0;
+    visibility: hidden;
+    z-index: 1250;
+    transition: opacity var(--ease), visibility var(--ease);
+}
+
+.home-sidebar-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.home-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: min(320px, 88vw);
+    height: 100dvh;
+    z-index: 1300;
+    background: #121212;
+    border-right: 1px solid var(--line);
+    transform: translateX(-100%);
+    transition: transform var(--ease);
+    padding: max(1rem, env(safe-area-inset-top)) 1rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.home-sidebar.open {
+    transform: translateX(0);
+}
+
+.home-sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.home-sidebar-header h2 {
+    font-size: 1.05rem;
+    color: var(--brand);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.home-sidebar-close {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.home-sidebar-nav {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.home-sidebar-nav a {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.68rem 0.75rem;
+    border-radius: var(--radius-sm);
+    color: #f2f2f2;
+    border: 1px solid transparent;
+    transition: background var(--ease), border-color var(--ease);
+}
+
+.home-sidebar-nav a:hover {
+    background: rgba(255, 255, 255, 0.09);
+    border-color: var(--line);
+}
+
+body.home-sidebar-open {
+    overflow: hidden;
+}
+
+/* Download page */
+.download-page {
+    min-height: 100dvh;
+}
+
+.download-page-main {
+    width: min(1120px, 100%);
+    margin: 0 auto;
+    padding: 7.4rem clamp(1rem, 3vw, 2.4rem) 2.4rem;
+}
+
+.download-hero {
+    margin-bottom: 1.4rem;
+}
+
+.download-hero h1 {
+    font-size: clamp(1.9rem, 4.8vw, 3rem);
+    margin-bottom: 0.45rem;
+}
+
+.download-hero p {
+    color: var(--text-soft);
+}
+
+.download-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+    gap: 0.95rem;
+}
+
+.download-card {
+    background: linear-gradient(165deg, #212121, #191919 70%);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 1rem;
+    box-shadow: var(--shadow);
+}
+
+.download-card .platform-icon {
+    font-size: 2.1rem;
+    margin-bottom: 0.6rem;
+}
+
+.download-card h2 {
+    font-size: 1.2rem;
+    margin-bottom: 0.3rem;
+}
+
+.download-card p {
+    color: var(--text-soft);
+    margin-bottom: 0.75rem;
+}
+
+.download-meta {
+    display: grid;
+    gap: 0.3rem;
+    font-size: 0.84rem;
+    color: #d7d7d7;
+    margin-bottom: 0.8rem;
+}
+
+.download-btn {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    background: var(--brand);
+    color: #fff;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    padding: 0.7rem 0.95rem;
+}
+
+.download-btn:hover {
+    background: #c80812;
+}
+
+.download-details {
+    margin-top: 1rem;
+    display: grid;
+    gap: 0.9rem;
+}
+
+.details-panel {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 0.95rem;
+}
+
+.details-panel h3 {
+    margin-bottom: 0.5rem;
+}
+
+.details-panel ol {
+    padding-left: 1.2rem;
+    color: #d7d7d7;
+    display: grid;
+    gap: 0.35rem;
+}
+
 /* Hero */
 .hero-showcase {
     position: relative;

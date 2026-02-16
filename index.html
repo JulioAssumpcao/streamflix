@@ -35,11 +35,15 @@
     <div class="homepage-container">
         <header class="netflix-nav homepage-nav">
             <div class="nav-left">
+                <button id="home-menu-toggle" class="nav-icon-btn" aria-label="Open menu">
+                    <i class="fas fa-bars"></i>
+                </button>
                 <h1 class="brand-logo"><i class="fas fa-play-circle"></i> StreamFlix</h1>
                 <nav class="nav-links">
                     <a href="#" class="active">Home</a>
                     <a href="#popular-channels">TV Shows</a>
                     <a href="#all-channels">Live</a>
+                    <a href="./download.html">Downloads</a>
                 </nav>
             </div>
             <div class="nav-right">
@@ -56,6 +60,24 @@
                 </button>
             </div>
         </header>
+
+        <div id="home-sidebar-overlay" class="home-sidebar-overlay"></div>
+        <aside id="home-sidebar" class="home-sidebar">
+            <div class="home-sidebar-header">
+                <h2><i class="fas fa-play-circle"></i> StreamFlix</h2>
+                <button id="home-sidebar-close" class="home-sidebar-close" aria-label="Close menu">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <nav class="home-sidebar-nav">
+                <a href="./index.html"><i class="fas fa-house"></i> Home</a>
+                <a href="./player.html"><i class="fas fa-tv"></i> Player</a>
+                <a href="./download.html"><i class="fas fa-download"></i> Downloads</a>
+                <a href="https://github.com/chriz-3656/streamflix/releases/tag/v2.3.0" target="_blank" rel="noopener noreferrer">
+                    <i class="fab fa-github"></i> Release v2.3.0
+                </a>
+            </nav>
+        </aside>
 
         <!-- Hero Section with Featured Content -->
         <section class="hero-showcase">
