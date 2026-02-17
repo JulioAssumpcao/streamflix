@@ -1240,6 +1240,13 @@ class NetflixIPTVPlayer {
         if (forceRelay) {
             return true;
         }
+        
+        // In Electron with web security disabled, we can play HTTP streams directly.
+        // Direct connection is preferred over relay to avoid overhead and potential proxy blocking.
+        if (this.isElectron() && this.isHttpStreamUrl(url)) {
+            return false;
+        }
+
         return this.isHttpStreamUrl(url);
     }
 
@@ -1632,6 +1639,10 @@ class NetflixIPTVPlayer {
     isMobileDevice() {
         return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
                (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
+    }
+
+    isElectron() {
+        return !!window.streamflixDesktop || /Electron/i.test(navigator.userAgent);
     }
 
     // Initialize mobile-specific features
