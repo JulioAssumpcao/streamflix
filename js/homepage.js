@@ -538,17 +538,34 @@ class StreamFlixHomepage {
             this.setChannelStatus(url, 'dead');
             return;
         }
-
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort('timeout'), 6000);
         try {
             const response = await fetch(target, { cache: 'no-store', signal: controller.signal });
-            this.setChannelStatus(url, response.ok ? 'live' : 'dead');
+            if (response.ok) {
+                this.setChannelStatus(url, 'live');
+            } else if (this.relayEnabled && target.includes(this.relayEndpoint) && this.isHttpStreamUrl(url)) {
+                // If relay probe fails for HTTP stream, try direct HTTPS upgrade probe as fallback
+                const upgradedUrl = url.replace(/^http:\/\//i, 'https://');
+                const directController = new AbortController();
+                const directTimeout = setTimeout(() => directController.abort('timeout'), 5000);
+                try {
+                    const directResponse = await fetch(upgradedUrl, { method: 'HEAD', cache: 'no-store', signal: directController.signal });
+                    this.setChannelStatus(url, directResponse.ok ? 'live' : 'dead');
+                } catch (e) {
+                    this.setChannelStatus(url, 'dead');
+                } finally {
+                    clearTimeout(directTimeout);
+                }
+            } else {
+                this.setChannelStatus(url, 'dead');
+            }
         } catch (error) {
             this.setChannelStatus(url, 'dead');
         } finally {
             clearTimeout(timeout);
         }
+    }
     }
 
     buildProbeUrl(url) {
