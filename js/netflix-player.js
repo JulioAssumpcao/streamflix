@@ -995,6 +995,19 @@ class NetflixIPTVPlayer {
                                 return;
                             }
 
+                            // If relay fails and we haven't tried upgrading to HTTPS yet, try that as a last resort
+                            if (usingRelay && !allowDirectFallback && allowHttpUpgrade && this.isHttpStreamUrl(streamUrl)) {
+                                const upgradedUrl = this.upgradeToHttps(streamUrl);
+                                console.warn('Relay failed, attempting direct HTTPS upgrade fallback:', upgradedUrl);
+                                this.loadChannel(upgradedUrl, channel, {
+                                    allowHttpUpgrade: false,
+                                    forceDirect: true,
+                                    allowDirectFallback: false,
+                                    forceRelay: false
+                                });
+                                return;
+                            }
+
                             if (classifiedError.blockRetry) {
                                 this.showLoading(false);
                                 this.showError(classifiedError.message);
