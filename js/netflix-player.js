@@ -1008,6 +1008,19 @@ class NetflixIPTVPlayer {
                                 return;
                             }
 
+                            // If relay fails with 403/401, it might be blocking the relay IP.
+                            // Try direct connection even if it's HTTP (browser might block mixed content, but it's worth a shot if user has disabled protection)
+                            if (usingRelay && !allowDirectFallback && !forceDirect && (data.response.code === 403 || data.response.code === 401)) {
+                                console.warn('Relay blocked (403/401), attempting direct connection as last resort...');
+                                this.loadChannel(streamUrl, channel, {
+                                    allowHttpUpgrade: false,
+                                    forceDirect: true,
+                                    allowDirectFallback: false,
+                                    forceRelay: false
+                                });
+                                return;
+                            }
+
                             if (classifiedError.blockRetry) {
                                 this.showLoading(false);
                                 this.showError(classifiedError.message);
