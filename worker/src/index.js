@@ -102,14 +102,14 @@ function isPlaylistResponse(pathname = '', contentType = '') {
 }
 
 async function fetchUpstream(request, upstreamUrl, signal, range, strictMode) {
-  const fallbackUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36';
-  const incomingUA = request.headers.get('user-agent') || fallbackUA;
+  // Use a fixed, modern browser User-Agent to avoid blocking
+  const browserUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
   const headers = new Headers({
     'accept': '*/*',
-    'accept-language': request.headers.get('accept-language') || 'en-US,en;q=0.9',
+    'accept-language': 'en-US,en;q=0.9',
     'cache-control': 'no-cache',
     'pragma': 'no-cache',
-    'user-agent': incomingUA
+    'user-agent': browserUA
   });
   if (range) {
     headers.set('range', range);

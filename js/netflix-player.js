@@ -878,12 +878,13 @@ class NetflixIPTVPlayer {
         const {
             allowHttpUpgrade = true,
             forceDirect = false,
-            allowDirectFallback = true
+            allowDirectFallback = true,
+            forceRelay = false
         } = options;
         let streamUrl = url;
         const relayRequired = this.requiresRelay(streamUrl);
         const canUseRelay = this.relayEnabled;
-        let usingRelay = this.shouldRelayUrl(streamUrl, forceDirect);
+        let usingRelay = this.shouldRelayUrl(streamUrl, forceDirect, forceRelay);
 
         if (relayRequired && !usingRelay) {
             this.showLoading(false);
@@ -981,6 +982,19 @@ class NetflixIPTVPlayer {
                                 });
                                 return;
                             }
+                            
+                            // Auto-retry with relay if direct connection fails (fixes CORS on HTTPS streams)
+                            if (!usingRelay && this.relayEnabled && !forceDirect) {
+                                console.warn('Direct connection failed, attempting fallback to relay...');
+                                this.loadChannel(url, channel, {
+                                    allowHttpUpgrade: false,
+                                    forceDirect: false,
+                                    allowDirectFallback: false,
+                                    forceRelay: true
+                                });
+                                return;
+                            }
+
                             if (classifiedError.blockRetry) {
                                 this.showLoading(false);
                                 this.showError(classifiedError.message);
@@ -1216,12 +1230,15 @@ class NetflixIPTVPlayer {
         return /^http:\/\//i.test(url || '');
     }
 
-    shouldRelayUrl(url, forceDirect = false) {
+    shouldRelayUrl(url, forceDirect = false, forceRelay = false) {
         if (forceDirect) {
             return false;
         }
         if (!this.relayEnabled) {
             return false;
+        }
+        if (forceRelay) {
+            return true;
         }
         return this.isHttpStreamUrl(url);
     }

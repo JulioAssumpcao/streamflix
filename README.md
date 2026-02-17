@@ -455,7 +455,11 @@ Upload these files to any static hosting:
 
 ## 📊 Changelog
 
-### Version 2.3 (February 2026) - Current
+### Version 2.4 (February 2026) - Current
+- ✅ **Smart Relay Fallback** – Automatically detects when a direct stream connection fails (e.g., due to CORS or mixed content) and seamlessly switches to the internal relay for playback.
+- ✅ **Browser Identity Masquerading** – The relay now uses a modern browser User-Agent and proper Origin/Referer headers, preventing upstream servers from blocking the proxy.
+- ✅ **Enhanced HTTPS Support** – Solves the "green lock" issue where secure sites couldn't play insecure HTTP streams. The player now intelligently routes these through the relay.
+- ✅ **Desktop Compatibility Boost** – Electron app now runs with relaxed web security, allowing a wider range of streams to play natively without needing the relay.
 - ✅ **Native Relay Desktop Build** – The Electron bundle now launches `lib/streamflix-app.js`, proxies every upstream stream through `http://127.0.0.1:<port>/api/relay`, and rewrites nested HLS URLs so the renderer only talks to localhost.
 - ✅ **Windows Installer** – `npm run dist -- --win` produces `streamflix Setup 2.3.0.exe` (NSIS installer) on top of the Linux `.AppImage`/`.deb` artifacts.
 - ✅ **Branded Icons** – Added high-resolution StreamFlix icons so the Linux/Windows packages carry the new visual identity.

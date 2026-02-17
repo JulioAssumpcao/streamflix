@@ -45,6 +45,8 @@ function createMainWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      webSecurity: false,
+      allowRunningInsecureContent: true,
       additionalArguments: [`--streamflix-relay-base=${relayBase}`]
     }
   });
