@@ -455,11 +455,13 @@ Upload these files to any static hosting:
 
 ## 📊 Changelog
 
-### Version 2.4 (February 2026) - Current
+### Version 2.4 (February 17, 2026) - Current
 - ✅ **Smart Relay Fallback** – Automatically detects when a direct stream connection fails (e.g., due to CORS or mixed content) and seamlessly switches to the internal relay for playback.
 - ✅ **Browser Identity Masquerading** – The relay now uses a modern browser User-Agent and proper Origin/Referer headers, preventing upstream servers from blocking the proxy.
 - ✅ **Enhanced HTTPS Support** – Solves the "green lock" issue where secure sites couldn't play insecure HTTP streams. The player now intelligently routes these through the relay.
 - ✅ **Desktop Compatibility Boost** – Electron app now runs with relaxed web security, allowing a wider range of streams to play natively without needing the relay.
+
+### Version 2.3 (February 14, 2026)
 - ✅ **Native Relay Desktop Build** – The Electron bundle now launches `lib/streamflix-app.js`, proxies every upstream stream through `http://127.0.0.1:<port>/api/relay`, and rewrites nested HLS URLs so the renderer only talks to localhost.
 - ✅ **Windows Installer** – `npm run dist -- --win` produces `streamflix Setup 2.3.0.exe` (NSIS installer) on top of the Linux `.AppImage`/`.deb` artifacts.
 - ✅ **Branded Icons** – Added high-resolution StreamFlix icons so the Linux/Windows packages carry the new visual identity.
@@ -468,7 +470,7 @@ Upload these files to any static hosting:
 - ✅ **Download Center** – Added `download.html` with direct Windows/Linux release links and installation instructions.
 - ✅ **Android Coming Soon** – Added Android APK placeholder/status block and roadmap notes in the download center.
 
-### Version 2.1 (February 2026) - Current
+### Version 2.1 (February 10, 2026)
 - ✅ **Fixed JavaScript Syntax Error** - Channels now load properly
 - ✅ **Added Netflix Splash Screen** - Animated logo on app load (2.5s)
 - ✅ **Advanced Player Controls** - Fullscreen, Theater Mode, Picture-in-Picture
@@ -481,7 +483,7 @@ Upload these files to any static hosting:
 - ✅ **Live Deployment** - Published to Cloudflare Pages
 - 🔧 **Code Cleanup** - Fixed class method positioning bug
 
-### Version 2.0 (February 2026)
+### Version 2.0 (February 5, 2026)
 - ✅ Added HLS.js library for proper HLS streaming
 - ✅ Fixed audio playback issues
 - ✅ Redesigned UI layout (video top, content below)
@@ -492,7 +494,7 @@ Upload these files to any static hosting:
 - ✅ Cleaned up volume controls
 - 🗑️ Removed unused documentation files
 
-### Version 1.0 (Initial Release)
+### Version 1.0 (January 20, 2026)
 - 🎉 Netflix-style IPTV player
 - 📺 M3U playlist support
 - 🔍 Search and filtering
