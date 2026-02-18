@@ -6,9 +6,15 @@
 
 A modern, Netflix-inspired web-based IPTV player that streams live TV channels from M3U playlists with a premium user experience. Built with vanilla JavaScript and HLS.js for seamless HLS streaming support.
 
-## ✨ Latest Updates (v2.3)
+## ✨ Latest Updates (v2.5)
 
 ### 🚀 New Features, Fixes, and UX Improvements
+
+#### **YouTube & Custom Stream Support**
+- **Play URL Feature**: Added a "Play URL" button to the homepage and player sidebar.
+- **YouTube Integration**: Paste any YouTube video or live stream URL to watch it directly in the player.
+- **Custom Streams**: Support for direct `.m3u8`, `.mp4`, and `.ts` stream URLs not listed in the default playlists.
+- **Seamless Switching**: Automatically switches between the standard HLS player and YouTube iframe based on the content type.
 
 #### **Playback & Channel Selection**
 - **Deterministic Channel Handoff**: Channel selected on homepage now opens the exact same stream on player page (URL now carries `channel`, `stream`, `name`, `group`, `logo`).
@@ -455,7 +461,9 @@ Upload these files to any static hosting:
 
 ## 📊 Changelog
 
-### Version 2.4 (February 17, 2026) - Current
+### Version 2.5 (February 18, 2026) - Current
+- ✅ **YouTube Live Support** – Added native support for playing YouTube videos and live streams directly within the player.
+- ✅ **Play Custom URL** – New feature allowing users to input and play any custom stream URL (HLS, MP4, YouTube).
 - ✅ **Smart Relay Fallback** – Automatically detects when a direct stream connection fails (e.g., due to CORS or mixed content) and seamlessly switches to the internal relay for playback.
 - ✅ **Browser Identity Masquerading** – The relay now uses a modern browser User-Agent and proper Origin/Referer headers, preventing upstream servers from blocking the proxy.
 - ✅ **Enhanced HTTPS Support** – Solves the "green lock" issue where secure sites couldn't play insecure HTTP streams. The player now intelligently routes these through the relay.
@@ -512,11 +520,12 @@ Contributions are welcome! Areas for improvement:
 - [ ] Chromecast support for TV casting
 - [ ] EPG (Electronic Program Guide) integration
 - [ ] Subtitle/closed caption support
-- [ ] PWA manifest for "Add to Home Screen"
+- [x] ✅ PWA manifest for "Add to Home Screen" (completed v2.3)
 - [x] ✅ Picture-in-Picture mode (completed v2.1)
 - [x] ✅ Fullscreen mode (completed v2.1)
 - [x] ✅ Theater mode (completed v2.1)
 - [x] ✅ Mobile optimization (completed v2.1)
+- [x] ✅ YouTube & Custom URL support (completed v2.5)
 
 ## ⚠️ Disclaimer
 
