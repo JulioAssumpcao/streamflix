@@ -192,6 +192,7 @@ class NetflixIPTVPlayer {
         this.sessionDurationEl = document.getElementById('session-duration');
         this.streamFormatEl = document.getElementById('stream-format');
         this.streamSourceEl = document.getElementById('stream-source');
+        this.playUrlBtn = document.getElementById('play-url-btn');
 
         // YouTube player container
         this.youtubeContainer = document.createElement('div');
@@ -291,6 +292,10 @@ class NetflixIPTVPlayer {
         }
         if (this.categoryFilter) {
             this.categoryFilter.addEventListener('change', (e) => this.filterByCategory(e.target.value));
+        }
+
+        if (this.playUrlBtn) {
+            this.playUrlBtn.addEventListener('click', () => this.promptForCustomUrl());
         }
 
         if (this.videoWrapper) {
@@ -1654,6 +1659,34 @@ class NetflixIPTVPlayer {
         const hero = document.querySelector('.hero-section');
         if (hero) {
             hero.style.transform = `translateY(${scrolled * 0.5}px)`;
+        }
+    }
+
+    promptForCustomUrl() {
+        const url = prompt('Enter a stream URL (YouTube, m3u8, mp4, etc.):');
+        if (url && url.trim()) {
+            const cleanUrl = url.trim();
+            console.log('🔗 Playing custom URL:', cleanUrl);
+            
+            const customChannel = {
+                name: 'Custom Stream',
+                group: 'User Input',
+                logo: '',
+                resolution: 'LIVE',
+                url: cleanUrl,
+                id: 'custom-' + Date.now()
+            };
+
+            this.currentChannelIndex = -1;
+            this.updateChannelInfo(customChannel);
+            this.updateSidebarInfo(customChannel);
+            this.updateProgramPanel(customChannel);
+            this.loadChannel(cleanUrl, customChannel);
+            
+            // Close sidebar on mobile
+            if (window.innerWidth <= 768) {
+                this.toggleSidebar(false);
+            }
         }
     }
 

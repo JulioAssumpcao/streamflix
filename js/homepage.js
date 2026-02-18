@@ -31,6 +31,7 @@ class StreamFlixHomepage {
     initializeElements() {
         this.watchNowBtn = document.getElementById('watch-now');
         this.browseChannelsBtn = document.getElementById('browse-channels');
+        this.playCustomUrlBtn = document.getElementById('play-custom-url');
         this.browseChannelsTopBtn = document.getElementById('browse-channels-top');
         this.searchInput = document.getElementById('search-input');
         this.allChannelsGrid = document.getElementById('all-channels');
@@ -60,6 +61,10 @@ class StreamFlixHomepage {
 
         if (this.browseChannelsTopBtn) {
             this.browseChannelsTopBtn.addEventListener('click', () => this.scrollToChannels());
+        }
+
+        if (this.playCustomUrlBtn) {
+            this.playCustomUrlBtn.addEventListener('click', () => this.promptForCustomUrl());
         }
         
         if (this.searchInput) {
@@ -430,6 +435,23 @@ class StreamFlixHomepage {
     startWatching() {
         // Open player without auto-selecting a channel.
         window.location.href = './player.html';
+    }
+
+    promptForCustomUrl() {
+        const url = prompt('Enter a stream URL (YouTube, m3u8, mp4, etc.):');
+        if (url && url.trim()) {
+            const cleanUrl = url.trim();
+            console.log('🔗 Playing custom URL:', cleanUrl);
+            
+            const query = new URLSearchParams({
+                stream: cleanUrl,
+                name: 'Custom Stream',
+                group: 'User Input',
+                playlist: this.selectedPlaylist
+            });
+            
+            window.location.href = `./player.html?${query.toString()}`;
+        }
     }
 
     scrollToChannels() {
