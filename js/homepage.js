@@ -566,7 +566,6 @@ class StreamFlixHomepage {
             clearTimeout(timeout);
         }
     }
-    }
 
     buildProbeUrl(url) {
         if (!url) return null;
