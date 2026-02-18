@@ -205,7 +205,13 @@ class StreamFlixHomepage {
     }
 
     isValidStreamUrl(url) {
-        return url && (url.includes('.m3u8') || url.includes('.mp4') || url.includes('.ts'));
+        return url && (
+            url.includes('.m3u8') || 
+            url.includes('.mp4') || 
+            url.includes('.ts') ||
+            url.includes('youtube.com') ||
+            url.includes('youtu.be')
+        );
     }
 
     processChannels() {

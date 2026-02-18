@@ -193,6 +193,21 @@ class NetflixIPTVPlayer {
         this.streamFormatEl = document.getElementById('stream-format');
         this.streamSourceEl = document.getElementById('stream-source');
 
+        // YouTube player container
+        this.youtubeContainer = document.createElement('div');
+        this.youtubeContainer.id = 'youtube-player-container';
+        this.youtubeContainer.style.display = 'none';
+        this.youtubeContainer.style.width = '100%';
+        this.youtubeContainer.style.height = '100%';
+        this.youtubeContainer.style.position = 'absolute';
+        this.youtubeContainer.style.top = '0';
+        this.youtubeContainer.style.left = '0';
+        this.youtubeContainer.style.zIndex = '1';
+        
+        if (this.videoWrapper) {
+            this.videoWrapper.insertBefore(this.youtubeContainer, this.videoPlayer);
+        }
+
         // Debug logging
         console.log('🔍 Element initialization results:');
         console.log('- Video player:', !!this.videoPlayer);
@@ -608,7 +623,20 @@ class NetflixIPTVPlayer {
     isValidStreamUrl(url) {
         // Basic validation for stream URLs
         const validExtensions = ['.m3u8', '.mp4', '.ts', '.webm'];
-        return validExtensions.some(ext => url.includes(ext)) || url.includes('live') || url.includes('stream');
+        return validExtensions.some(ext => url.includes(ext)) || 
+               url.includes('live') || 
+               url.includes('stream') ||
+               this.isYoutubeUrl(url);
+    }
+
+    isYoutubeUrl(url) {
+        return url.includes('youtube.com') || url.includes('youtu.be');
+    }
+
+    extractYoutubeId(url) {
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : null;
     }
 
     parseChannelMetadata(line) {
@@ -855,6 +883,7 @@ class NetflixIPTVPlayer {
     }
 
     getStreamFormat(url = '') {
+        if (this.isYoutubeUrl(url)) return 'YouTube Live';
         const clean = url.split('?')[0].toLowerCase();
         if (clean.includes('.m3u8')) return 'HLS (.m3u8)';
         if (clean.includes('.mp4')) return 'MP4';
@@ -874,6 +903,19 @@ class NetflixIPTVPlayer {
     loadChannel(url, channel = null, options = {}) {
         console.log('Loading channel:', url);
         this.showLoading(true);
+
+        // Handle YouTube channels
+        if (this.isYoutubeUrl(url)) {
+            this.loadYoutubeChannel(url);
+            return;
+        }
+
+        // Hide YouTube container if visible
+        if (this.youtubeContainer) {
+            this.youtubeContainer.style.display = 'none';
+            this.youtubeContainer.innerHTML = '';
+        }
+        this.videoPlayer.style.display = 'block';
 
         const {
             allowHttpUpgrade = true,
@@ -1082,6 +1124,46 @@ class NetflixIPTVPlayer {
             this.showLoading(false);
             this.showError('HLS streams not supported in this browser');
         }
+    }
+
+    loadYoutubeChannel(url) {
+        const videoId = this.extractYoutubeId(url);
+        if (!videoId) {
+            this.showError('Invalid YouTube URL');
+            this.showLoading(false);
+            return;
+        }
+
+        console.log('Loading YouTube video:', videoId);
+        
+        // Hide standard video player
+        this.videoPlayer.pause();
+        this.videoPlayer.style.display = 'none';
+        
+        // Show YouTube container
+        if (this.youtubeContainer) {
+            this.youtubeContainer.style.display = 'block';
+            this.youtubeContainer.innerHTML = `
+                <iframe 
+                    width="100%" 
+                    height="100%" 
+                    src="https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&rel=0&modestbranding=1&playsinline=1" 
+                    title="YouTube video player" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                    allowfullscreen
+                    style="border: none;"
+                ></iframe>
+            `;
+        }
+        
+        this.showLoading(false);
+        this.isPlaying = true;
+        
+        // Update UI state
+        const playIcon = this.playPauseBtn.querySelector('i');
+        playIcon.className = 'fas fa-pause';
+        this.setControlsOverlayVisible(true, true);
     }
 
     isMixedContentUrl(url) {
