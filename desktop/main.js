@@ -1,6 +1,6 @@
 const path = require('path');
 const http = require('node:http');
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, shell } = require('electron');
 const { createStreamFlixApp } = require('../lib/streamflix-app');
 
 let localServer = null;
@@ -33,6 +33,7 @@ async function stopLocalServer() {
 
 function createMainWindow() {
   const relayBase = `http://127.0.0.1:${localPort}/api/relay`;
+  const appBaseUrl = `http://127.0.0.1:${localPort}`;
   const win = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -47,11 +48,38 @@ function createMainWindow() {
       sandbox: true,
       webSecurity: false,
       allowRunningInsecureContent: true,
-      additionalArguments: [`--streamflix-relay-base=${relayBase}`]
+      additionalArguments: [
+        `--streamflix-relay-base=${relayBase}`,
+        '--streamflix-app-mode=desktop'
+      ]
     }
   });
 
-  win.loadURL(`http://127.0.0.1:${localPort}/index.html`);
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url).catch(() => {});
+    return { action: 'deny' };
+  });
+
+  win.webContents.on('will-navigate', (event, targetUrl) => {
+    try {
+      const parsed = new URL(targetUrl);
+      const isLocal = parsed.origin === appBaseUrl;
+      if (!isLocal) {
+        event.preventDefault();
+        shell.openExternal(targetUrl).catch(() => {});
+        return;
+      }
+
+      if (parsed.pathname.endsWith('/download.html')) {
+        event.preventDefault();
+        win.loadURL(`${appBaseUrl}/index.html?mode=desktop`);
+      }
+    } catch (_error) {
+      // Ignore malformed URLs.
+    }
+  });
+
+  win.loadURL(`${appBaseUrl}/index.html?mode=desktop`);
 }
 
 app.whenReady().then(async () => {

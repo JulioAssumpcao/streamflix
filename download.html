@@ -12,6 +12,11 @@
     <meta name="theme-color" content="#e50914">
 </head>
 <body class="download-page">
+    <script>
+        if (window.streamflixDesktop && window.streamflixDesktop.appMode === 'desktop') {
+            window.location.replace('./index.html?mode=desktop');
+        }
+    </script>
     <header class="netflix-nav homepage-nav">
         <div class="nav-left">
             <h1 class="brand-logo"><i class="fas fa-play-circle"></i> StreamFlix</h1>

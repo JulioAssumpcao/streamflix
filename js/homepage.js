@@ -1,5 +1,7 @@
 class StreamFlixHomepage {
     constructor() {
+        this.appMode = this.detectAppMode();
+        this.isDesktopApp = this.appMode === 'desktop';
         this.channels = [];
         this.featuredChannels = [];
         this.continueWatching = [];
@@ -23,9 +25,25 @@ class StreamFlixHomepage {
         this.selectedPlaylist = localStorage.getItem('streamflix-preferred-playlist') || 'global';
         
         this.initializeElements();
+        this.applyAppMode();
         this.bindEvents();
         this.loadChannels();
         this.setupSlideshow();
+    }
+
+    detectAppMode() {
+        const fromDesktopBridge = (window.streamflixDesktop && window.streamflixDesktop.appMode) || '';
+        const fromQuery = new URLSearchParams(window.location.search).get('mode') || '';
+        const normalized = (fromDesktopBridge || fromQuery || 'web').toLowerCase();
+        return normalized === 'desktop' ? 'desktop' : 'web';
+    }
+
+    applyAppMode() {
+        document.body.dataset.appMode = this.appMode;
+        if (!this.isDesktopApp) {
+            return;
+        }
+        document.querySelectorAll('[data-web-only]').forEach((element) => element.remove());
     }
 
     initializeElements() {
